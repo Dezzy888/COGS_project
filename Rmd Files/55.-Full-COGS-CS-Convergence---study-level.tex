@@ -1,0 +1,434 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={55. Full COGS2 CS Convergence},
+  pdfauthor={Daniel Zoleikhaeian},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{55. Full COGS2 CS Convergence}
+\author{Daniel Zoleikhaeian}
+\date{2023-08-15}
+
+\begin{document}
+\maketitle
+
+\hypertarget{setup}{%
+\subsection{Setup}\label{setup}}
+
+\hypertarget{importing-cogs2-data}{%
+\subsubsection{Importing COGS2 data}\label{importing-cogs2-data}}
+
+\begin{verbatim}
+## 
+## Attaching package: 'dplyr'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:plyr':
+## 
+##     arrange, count, desc, failwith, id, mutate, rename, summarise,
+##     summarize
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: package 'gridExtra' was built under R version 4.3.1
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'gridExtra'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:dplyr':
+## 
+##     combine
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'kableExtra'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:dplyr':
+## 
+##     group_rows
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: package 'tableHTML' was built under R version 4.3.1
+\end{verbatim}
+
+\begin{verbatim}
+## [1] 2477
+\end{verbatim}
+
+\begin{verbatim}
+##           X cStudy cAge cDiagnosis cEnrollmentDateYear cGender cRace
+## 33535 34651  COGS2   25       CTRL          2010-07-07       M    AS
+## 33536 34652  COGS2   43         SZ          2010-07-14       M    CA
+## 33537 34653  COGS2   44       CTRL          2010-07-15       M    AA
+## 33538 34654  COGS2   50         SZ          2010-07-16       M    CA
+## 33539 34655  COGS2   49       CTRL          2010-07-19       M    CA
+## 33540 34656  COGS2   43         SZ          2010-07-20       M    AA
+##       cHispanicorLatino cLocationInstitution cLocationCity cLocationState
+## 33535                No                 UCSD     San Diego             CA
+## 33536               Yes                 UCSD     San Diego             CA
+## 33537                No                 UCSD     San Diego             CA
+## 33538                No                 UCSD     San Diego             CA
+## 33539                No                 UCSD     San Diego             CA
+## 33540                No                 UCSD     San Diego             CA
+##       cLocationCounty cDiagnosis2 cDiagnosis3 cDiagnosis4
+## 33535       San Diego          CS          CS          CS
+## 33536       San Diego          SZ      SZSAFD      SZSAFD
+## 33537       San Diego          CS          CS          CS
+## 33538       San Diego          SZ      SZSAFD      SZSAFD
+## 33539       San Diego          CS          CS          CS
+## 33540       San Diego          SZ      SZSAFD      SZSAFD
+\end{verbatim}
+
+\begin{verbatim}
+##           X cStudy cAge cDiagnosis cEnrollmentDateYear cGender cRace
+## 33535 34651  COGS2   25       CTRL          2010-07-07       M    AS
+## 33536 34652  COGS2   43         SZ          2010-07-14       M    CA
+## 33537 34653  COGS2   44       CTRL          2010-07-15       M    AA
+## 33538 34654  COGS2   50         SZ          2010-07-16       M    CA
+## 33539 34655  COGS2   49       CTRL          2010-07-19       M    CA
+## 33540 34656  COGS2   43         SZ          2010-07-20       M    AA
+##       cHispanicorLatino cLocationInstitution cLocationCity cLocationState
+## 33535                No                 UCSD     San Diego             CA
+## 33536               Yes                 UCSD     San Diego             CA
+## 33537                No                 UCSD     San Diego             CA
+## 33538                No                 UCSD     San Diego             CA
+## 33539                No                 UCSD     San Diego             CA
+## 33540                No                 UCSD     San Diego             CA
+##       cLocationCounty cDiagnosis2 cDiagnosis3 cDiagnosis4 cEnrollmentYear
+## 33535       San Diego          CS          CS          CS            2010
+## 33536       San Diego          SZ      SZSAFD      SZSAFD            2010
+## 33537       San Diego          CS          CS          CS            2010
+## 33538       San Diego          SZ      SZSAFD      SZSAFD            2010
+## 33539       San Diego          CS          CS          CS            2010
+## 33540       San Diego          SZ      SZSAFD      SZSAFD            2010
+\end{verbatim}
+
+\begin{verbatim}
+## [1] "AS"  "CA"  "AA"  "MR"  "NH"  "AE"  "UNK"
+\end{verbatim}
+
+\begin{verbatim}
+## [1] 2477
+\end{verbatim}
+
+\hypertarget{helper-function-transforming-by-dictionary}{%
+\subsubsection{Helper function: Transforming by
+dictionary}\label{helper-function-transforming-by-dictionary}}
+
+\hypertarget{group-code-manipulations}{%
+\subsubsection{Group code
+manipulations}\label{group-code-manipulations}}
+
+\hypertarget{cogs-counts-for-diagnosis-within-a-city}{%
+\subsubsection{COGS counts for diagnosis within a
+city}\label{cogs-counts-for-diagnosis-within-a-city}}
+
+\hypertarget{pool-generator-function}{%
+\subsubsection{Pool generator function}\label{pool-generator-function}}
+
+\hypertarget{sampling-algorithm}{%
+\subsubsection{Sampling Algorithm}\label{sampling-algorithm}}
+
+\hypertarget{sampling-algorithm-driver}{%
+\subsubsection{Sampling Algorithm
+Driver}\label{sampling-algorithm-driver}}
+
+\hypertarget{histogram-and-percentile-generator}{%
+\subsubsection{Histogram and Percentile
+Generator}\label{histogram-and-percentile-generator}}
+
+\hypertarget{proportion-tester}{%
+\subsubsection{Proportion tester}\label{proportion-tester}}
+
+\hypertarget{importing-acs-data}{%
+\subsubsection{Importing ACS Data}\label{importing-acs-data}}
+
+\hypertarget{not-pooling-the-cities-together}{%
+\subsection{Not pooling the cities
+together}\label{not-pooling-the-cities-together}}
+
+\hypertarget{example-for-los-angeles}{%
+\subsubsection{Example for Los Angeles}\label{example-for-los-angeles}}
+
+\hypertarget{running-simulations}{%
+\paragraph{Running Simulations}\label{running-simulations}}
+
+\begin{verbatim}
+##  [1] "X"                    "cStudy"               "cAge"                
+##  [4] "cDiagnosis"           "cEnrollmentDateYear"  "cGender"             
+##  [7] "cRace"                "cHispanicorLatino"    "cLocationInstitution"
+## [10] "cLocationCity"        "cLocationState"       "cLocationCounty"     
+## [13] "cDiagnosis2"          "cDiagnosis3"          "cDiagnosis4"         
+## [16] "cEnrollmentYear"      "cRace2"
+\end{verbatim}
+
+\begin{verbatim}
+##   cRace2 cHispanicorLatino cGender freq       props
+## 1     AA                No       F   24 0.110599078
+## 2     AA                No       M   31 0.142857143
+## 3     AA               Yes       F    1 0.004608295
+## 4     AS                No       F    4 0.018433180
+## 5     AS                No       M    8 0.036866359
+## 6     CA                No       F   38 0.175115207
+\end{verbatim}
+
+\begin{verbatim}
+## [1] FALSE
+\end{verbatim}
+
+\begin{verbatim}
+## [1] 3730 4610 5330 6430 6270
+\end{verbatim}
+
+\begin{verbatim}
+##  [1] "YEAR"    "MET2013" "CITY"    "PERWT"   "SEX"     "AGE"     "RACE"   
+##  [8] "RACED"   "HISPAN"  "HISPAND" "Race2"   "Hispan2"
+\end{verbatim}
+
+\begin{verbatim}
+##   cRace2 cHispanicorLatino cGender freq       props group_code
+## 1     AA                No       F   24 0.110599078          1
+## 2     AA                No       M   31 0.142857143          2
+## 3     AA               Yes       F    1 0.004608295          3
+## 4     AS                No       F    4 0.018433180          9
+## 5     AS                No       M    8 0.036866359         10
+## 6     CA                No       F   38 0.175115207         13
+\end{verbatim}
+
+\begin{verbatim}
+##    Race2 Hispan2 SEX    freq         prop group_code
+## 6     AA      No   F  625258 0.0480695323          1
+## 5     AA      No   M  561927 0.0432006757          2
+## 8     AA     Yes   F   18609 0.0014306509          3
+## 14    AS      No   F  856198 0.0658240877          9
+## 13    AS      No   M  729571 0.0560890652         10
+## 2     CA      No   F 1824991 0.1403044244         13
+## 1     CA      No   M 1979100 0.1521522497         14
+## 4     CA     Yes   F 1494581 0.1149026636         15
+## 3     CA     Yes   M 1515528 0.1165130588         16
+## 18    NH      No   F   11390 0.0008756577         17
+## 22 OT/MR      No   F  142588 0.0109620964         21
+## 21 OT/MR      No   M  129582 0.0099622014         22
+## 24 OT/MR     Yes   F 1454893 0.1118514694         23
+## 23 OT/MR     Yes   M 1543646 0.1186747571         24
+\end{verbatim}
+
+\begin{verbatim}
+## [1] TRUE
+\end{verbatim}
+
+\begin{verbatim}
+## Time difference of 43.76601 secs
+\end{verbatim}
+
+\includegraphics{55.-Full-COGS-CS-Convergence---study-level_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+\begin{verbatim}
+##   Percentile Value
+## 1       2.5%    46
+## 2        25%    62
+## 3        50%    78
+## 4        75%    90
+## 5      97.5%   116
+\end{verbatim}
+
+\begin{table}
+
+\caption{\label{tab:unnamed-chunk-11}LA: Number of Resamples until Convergence for Control Subjects}
+\centering
+\begin{tabu} to \linewidth {>{\raggedright}X>{\raggedleft}X}
+\hline
+Percentile & Value\\
+\hline
+2.5\% & 46\\
+\hline
+25\% & 62\\
+\hline
+50\% & 78\\
+\hline
+75\% & 90\\
+\hline
+97.5\% & 116\\
+\hline
+\end{tabu}
+\end{table}
+
+\begin{verbatim}
+##    group_code freq freq_og    props_og props_target       props
+## 1           1   48      24 0.110599078 0.0480695323 0.049129990
+## 2           2   43      31 0.142857143 0.0432006757 0.044012282
+## 3           3    2       1 0.004608295 0.0014306509 0.002047083
+## 4           9   66       4 0.018433180 0.0658240877 0.067553736
+## 5          10   56       8 0.036866359 0.0560890652 0.057318321
+## 6          13  140      38 0.175115207 0.1403044244 0.143295803
+## 7          14  162      69 0.317972350 0.1521522497 0.165813715
+## 8          15  119      12 0.055299539 0.1149026636 0.121801433
+## 9          16  114      14 0.064516129 0.1165130588 0.116683726
+## 10         17    2       2 0.009216590 0.0008756577 0.002047083
+## 11         21   13       3 0.013824885 0.0109620964 0.013306039
+## 12         22   11       5 0.023041475 0.0099622014 0.011258956
+## 13         23   85       2 0.009216590 0.1118514694 0.087001024
+## 14         24  116       4 0.018433180 0.1186747571 0.118730809
+\end{verbatim}
+
+\includegraphics{55.-Full-COGS-CS-Convergence---study-level_files/figure-latex/unnamed-chunk-11-2.pdf}
+
+\begin{table}
+
+\caption{\label{tab:unnamed-chunk-11}LA CS : Number of Resamples until Convergence for Control Subjects}
+\centering
+\begin{tabu} to \linewidth {>{\raggedright}X>{\raggedleft}X}
+\hline
+Percentile & Value\\
+\hline
+2.5\% & 46\\
+\hline
+25\% & 62\\
+\hline
+50\% & 78\\
+\hline
+75\% & 90\\
+\hline
+97.5\% & 116\\
+\hline
+\end{tabu}
+\end{table}
+
+\hypertarget{checking-the-proportions}{%
+\paragraph{Checking the proportions}\label{checking-the-proportions}}
+
+\begin{verbatim}
+## [1] TRUE
+\end{verbatim}
+
+\begin{verbatim}
+##  [1] 1.647710e-04 6.322481e-09 2.670469e-01 2.278834e-03 2.987748e-01
+##  [6] 1.424834e-01 9.664769e-10 3.867062e-03 1.457837e-02 1.586562e-02
+## [11] 5.167375e-01 6.746446e-02 4.323681e-09 7.837473e-08
+\end{verbatim}
+
+\begin{verbatim}
+##  [1] 1.647710e-03 7.586978e-08 8.011406e-01 2.050951e-02 8.011406e-01
+##  [6] 5.699335e-01 1.353068e-08 3.093649e-02 1.020486e-01 1.020486e-01
+## [11] 8.011406e-01 3.373223e-01 5.620785e-08 8.621220e-07
+\end{verbatim}
+
+\begin{verbatim}
+##  [1] "**" "**" "-"  "**" "-"  "-"  "**" "**" "-"  "-"  "-"  "-"  "**" "**"
+\end{verbatim}
+
+\begin{verbatim}
+## [1] TRUE
+\end{verbatim}
+
+\hypertarget{testing-all-cogs-cities}{%
+\subsection{Testing all COGS Cities}\label{testing-all-cogs-cities}}
+
+Functions for use: - cogs\_city\_gen() - pool\_gen\_city() -
+sim\_runner() - hist\_perc() - prop\_tester()
+
+Pipeline: 1) Generate the proportions for the COGS data for a specific
+diagnosis and city 2) Generate the ACS proportions in that same city 3)
+Run the sampling algorithm 4) Create histogram of results 5) Test the
+initial proportions
+
+\includegraphics{55.-Full-COGS-CS-Convergence---study-level_files/figure-latex/unnamed-chunk-13-1.pdf}
+\includegraphics{55.-Full-COGS-CS-Convergence---study-level_files/figure-latex/unnamed-chunk-13-2.pdf}
+\includegraphics{55.-Full-COGS-CS-Convergence---study-level_files/figure-latex/unnamed-chunk-13-3.pdf}
+\includegraphics{55.-Full-COGS-CS-Convergence---study-level_files/figure-latex/unnamed-chunk-13-4.pdf}
+\includegraphics{55.-Full-COGS-CS-Convergence---study-level_files/figure-latex/unnamed-chunk-13-5.pdf}
+
+\end{document}

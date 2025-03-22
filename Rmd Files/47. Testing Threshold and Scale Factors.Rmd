@@ -1,0 +1,541 @@
+---
+title: "47. Testing Threshold and Scale Factor"
+author: "Daniel Zoleikhaeian"
+date: "2023-07-14"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Setup
+
+## Importing COGS2 data
+```{r}
+library(grid)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+
+df_COGS2 <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_060723.csv')
+df_COGS2 <- df_COGS2[df_COGS2$cStudy == 'COGS2', ]
+nrow(df_COGS2)
+
+head(df_COGS2)
+# adding year column
+df_COGS2$cEnrollmentYear <- as.numeric(substr(df_COGS2$cEnrollmentDateYear, 1,4))
+head(df_COGS2)
+
+unique(df_COGS2$cRace)
+
+# re-encoding OT/UNK/MR into one group
+df_COGS2$cRace2 <- df_COGS2$cRace
+df_COGS2$cRace2[df_COGS2$cRace2 %in% c('OT', 'OT/UNK', 'MR', 'UNK')] <- 'OT/MR'
+nrow(df_COGS2)
+
+# removing San Diego observations
+no_sd <- df_COGS2[df_COGS2$cLocationCity != 'San Diego', ]
+```
+
+### Helper function: Transforming by dictionary
+```{r}
+dict_transform <- function(keys, values, vec) {
+  for (i in 1:length(keys)) {
+    vec[vec == keys[i]] <- values[i]
+  }
+  return (vec)
+}
+```
+
+### Group code manipulations
+```{r}
+group_codes_df <- data.frame(Race2 = rep(c('AA', 'AE', 'AS','CA','NH','OT/MR'), rep(4,6)),
+                             Hispan2 = rep(rep(c('No','Yes'), c(2,2)), 6),
+                             Gender = rep(c('F','M'), 12),
+                             group_code = 1:24)
+
+group_code_gen <- function(df, handbook) {
+  df$group_code <- rep(0,nrow(df))
+  for (n in 1:nrow(df)) {
+    for (i in 1:nrow(handbook)) {
+      if (df[n,1] == handbook[i,1] &&
+          df[n,2] == handbook[i,2] &&
+          df[n,3] == handbook[i,3]) {
+        df$group_code[n] <- handbook$group_code[i]
+        break
+      } else {
+        next
+      }
+    }
+  }
+  return (df)
+}
+
+group_code_inverse <- function(df, handbook) {
+  df <- cbind(handbook[handbook$group_code %in% df$group_code, 1:3], df)
+  return(df)
+}
+```
+
+
+## Importing ACS Data
+```{r}
+df_acs <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\acs_cogs2_1014.csv')
+unique(df_acs$CITY) # all cities except SD
+head(df_acs)
+```
+
+## Encoding new race categories, binarizing hispan category
+```{r}
+df_acs$Race2 <- rep(0, nrow(df_acs))
+df_acs$Hispan2 <- rep(0, nrow(df_acs))
+
+sum(df_acs$HISPAN == 9) # everyone reported a hispanic status
+df_acs$Hispan2 <- as.numeric(df_acs$HISPAN != 0) # 0 for not hispanic or latino, else 1
+
+PI_raced <- c(680:699) # PI races
+
+df_acs$Race2[df_acs$RACE == 1 ] <- 1 # White
+df_acs$Race2[df_acs$RACE == 2 ] <- 2 # Black
+df_acs$Race2[df_acs$RACE == 3 ] <- 3 # American Indian or Alaska Native
+df_acs$Race2[df_acs$RACE %in% 4:6 & !(df_acs$RACED %in% PI_raced) ] <- 4 # Asian
+df_acs$Race2[df_acs$RACE == 6 & df_acs$RACED %in% PI_raced ] <- 5 # Pacific Islander (or Native Hawaiian)
+df_acs$Race2[df_acs$RACE %in% 7:9 ] <- 6 # Mixed/Other
+
+# truncating the acs dataset
+acs1865 <- df_acs[df_acs$AGE >= 18 & df_acs$AGE <= 65, ]
+```
+
+## Pool generator function
+Usage:
+- Inputs: diagnosis, acs original dataframe, cogs original dataframe, a codebook relating race x gender x ethnicity combos to group codes
+- Output: the acs pool of data for use as background proportions 
+```{r}
+
+pool_gen <- function(Diag4, cogs_data, acs_data, grp_codes_df) {
+  city_counts <- plyr::count(cogs_data[cogs_data$cDiagnosis4 == Diag4, ], 'cLocationCity')
+ 
+  
+  city_counts_acs <- plyr::count(acs_data, 'CITY', wt_var = 'PERWT')
+  
+  city_counts$proportion <- city_counts$freq / city_counts_acs$freq
+  
+  # collection of target proportions
+  cityprops <- vector("list", 4)
+  
+  cogs_codes <- unique(acs_data$CITY)
+  colnames(acs_data)
+  
+  # reweighting all the person weights by the frequencies found in COGS for CS
+  for (i in 1:length(cogs_codes)) {
+    acs_data$PERWT_Diag[acs_data$CITY == cogs_codes[i]] <- acs_data$PERWT[acs_data$CITY == cogs_codes[i]] * city_counts$proportion[i]
+  }
+  
+  pool <- plyr::count(acs_data, c('Race2', 'Hispan2', 'SEX'), wt_var = 'PERWT_Diag')
+  pool$prop <- pool$freq/sum(pool$freq)
+  pool$Race2 <- dict_transform(c(1:6),c('CA', 'AA', 'AE','AS','NH','OT/MR'), pool$Race2)
+  pool$Hispan2 <- dict_transform(c(0,1), c('No', 'Yes'), pool$Hispan2)
+  pool$SEX <- dict_transform(c(1,2),c('M','F'), pool$SEX)
+  pool <- pool[order(pool$Race2,pool$Hispan2,pool$SEX),]
+  
+  pool <- group_code_gen(pool, grp_codes_df)
+  
+    cogs_data_diag <- cogs_data[cogs_data$cDiagnosis4 == Diag4,]
+  cogs_counts <- plyr::count(cogs_data_diag, c('cRace2', 'cHispanicorLatino', 'cGender'))
+  cogs_counts$props <- cogs_counts$freq / sum(cogs_counts$freq)
+  cogs_counts <- group_code_gen(cogs_counts, grp_codes_df)
+  cogs_counts
+
+  # These are the unicorns - ignore these 
+  pool[pool$group_code %in% setdiff(pool$group_code, cogs_counts$group_code),]
+  # Asian Hispanics
+  # American indians/Alaska natives
+  # Native Hawaiian/ Pacific Islander Hispanics
+  
+  pool <- pool[pool$group_code %in% intersect(pool$group_code, cogs_counts$group_code),]
+  
+  
+  return (pool) 
+}
+```
+
+## Helper function for coercing lists into dataframes
+```{r}
+quickdf <- function(l) {
+  class(l) <- "data.frame"
+  attr(l, "row.names") <- .set_row_names(length(l[[1]]))
+  l
+}
+
+l1 <- list(nums = c(1,2,3), lets = c('a', 'b', 'c'))
+class(l1) <- "data.frame"
+attr(l1, "row.names") <- .set_row_names(length(l1[[1]]))
+l1
+```
+
+
+
+## Sampling algorithm
+
+Inputs
+- the original count from plyr::count(original_cogs_dataframe)
+- the pool count dataframe
+- scale factor (what percent of original sample you want to resample)
+- threshold to match the acs proportions +/- what you are looking for
+
+```{r}
+
+sampling_algorithm <- function(cogs_og, pool_df, scale_factor, thresh, n_iter, do_print = FALSE, suppress_df = TRUE) {
+  # making a copy of the original cogs data
+  # this copy will be updated in each pass
+  cogs_counts_updated <- cogs_og[, c('group_code', 'freq', 'props')]
+  cogs_counts_updated$freq_og <- cogs_og$freq
+  cogs_counts_updated$props_og <- cogs_og$props
+  cogs_counts_updated$props_target <- pool_df$prop
+  cogs_counts_updated <- cogs_counts_updated[, c('group_code', 'freq', 'freq_og','props_og','props_target','props')]
+
+  n_steps <- 0
+  size_arg <- sum(cogs_og$freq) * scale_factor
+  
+  # start loop here
+  
+  number_rejected <- data.frame(group_code = cogs_og$group_code,
+                                  n = rep(0, nrow(cogs_og)))          
+  
+  for (N in 1:n_iter) {
+    
+    # check stop condition: if all the new proportions are within 0.05 of the acs proportions, then stop
+    if (all(cogs_counts_updated$props >= (pool_df$prop - thresh)&
+    cogs_counts_updated$props <= pool_df$prop + thresh)) {
+   
+      if (do_print) {cat('Number of steps:', n_steps, '\n')}
+      break
+    }
+  
+    
+    
+    # Methodology: sample from the group_codes based on the proportion found in the original cogs_counts
+
+    sam <- sample(x = cogs_og$group_code, size = size_arg, prob = cogs_og$props, replace = TRUE)
+    sam_counts <- plyr::count(sam)
+    
+    # for each group code in cogs_counts
+    for (i in 1:nrow(cogs_counts_updated)) {
+      
+      # first check if the group was in the sample
+      if (any(cogs_counts_updated$group[i] %in% sam_counts$x)) {
+        # check whether the category is currently overrepresented
+        # if it is, then don't touch it
+        if (cogs_counts_updated$props[i] > pool_df$prop[i]) {
+          # update the number rejected
+          # but don't update the counts
+          number_rejected$n[number_rejected$group_code == cogs_counts_updated$group_code[i]] <- number_rejected$n[number_rejected$group_code == cogs_counts_updated$group_code[i]] + sam_counts$freq[sam_counts$x == cogs_counts_updated$group_code[i]]
+          
+        } else {
+          # the add the people to the sample
+          cogs_counts_updated$freq[i] <- cogs_counts_updated$freq[i] + sam_counts$freq[sam_counts$x == cogs_counts_updated$group_code[i]] 
+        }
+      }
+    }
+    
+    # update the proportions
+    cogs_counts_updated$props <- cogs_counts_updated$freq / sum(cogs_counts_updated$freq)
+    
+    # update the number of iterations
+    n_steps <- n_steps + 1
+  }
+  
+  if (N == n_iter && do_print) {
+    cat('Did not converge in', n_steps, 'steps.\n')
+  }
+  
+  if (suppress_df) {
+    return(n_steps) 
+  } else {
+    return (list(cogs_counts_updated, number_rejected, n_steps))
+  }
+}
+
+# to make run faster, subset cogs_og by 'group_code', 'freq', and 'props'
+sampling_algorithm2 <- function(cogs_og, pool_df, scale_factor, thresh, n_iter, do_print = FALSE, suppress_df = TRUE, track_rej = FALSE) {
+  # making a copy of the original cogs data
+  # this copy will be updated in each pass
+  
+  lnew_data <- list(freq = cogs_og$freq, group_code = cogs_og$group_code,
+                 props = cogs_og$props)
+  
+  # cogs_og <- cbind(cogs_og, data.frame(freq_og = cogs_og$freq,
+  #                                      props_og = cogs_og$props,
+  #                                      props_target = pool_df$prop)
+  #                                      )
+
+  n_steps <- 0
+  size_arg <- sum(cogs_og$freq) * scale_factor
+  
+  # start loop here
+  
+  if (track_rej) {
+     number_rejected <- data.frame(group_code = cogs_og$group_code,
+                                  n = rep(0, nrow(cogs_og)))        
+  }
+   
+  
+  for (N in 1:n_iter) {
+    
+    # check stop condition: if all the new proportions are within 0.05 of the acs proportions, then stop
+    if (all(lnew_data$props >= (pool_df$prop - thresh)&
+    lnew_data$props <= pool_df$prop + thresh)) {
+   
+      if (do_print) {cat('Number of steps:', n_steps, '\n')}
+      break
+    }
+  
+    
+    
+    # Methodology: sample from the group_codes based on the proportion found in the original cogs_counts
+    sam <- sample(x = cogs_og$group_code, size = size_arg, prob = cogs_og$props, replace = TRUE)
+    sam_counts <- plyr::count(sam)
+    
+    # for each group code in cogs_counts
+    for (i in 1:nrow(cogs_og)) {
+      
+      # first check if the group was in the sample
+      if (any(cogs_og$group[i] %in% sam_counts$x)) {
+        # check whether the category is currently overrepresented
+        # if it is, then don't touch it
+        if (lnew_data$props[i] > pool_df$prop[i]) {
+          # update the number rejected
+          # but don't update the counts
+          if (track_rej) {
+            number_rejected$n[number_rejected$group_code == cogs_og$group_code[i]] <- number_rejected$n[number_rejected$group_code == cogs_og$group_code[i]] + sam_counts$freq[sam_counts$x == cogs_og$group_code[i]]
+          }
+          
+          
+        } else {
+          # the add the people to the sample
+          lnew_data$freq[i] <- lnew_data$freq[i] + sam_counts$freq[sam_counts$x == lnew_data$group_code[i]] 
+        }
+      }
+    }
+    
+    # update the proportions
+    lnew_data$props <- lnew_data$freq / sum(lnew_data$freq)
+    
+    # update the number of iterations
+    n_steps <- n_steps + 1
+  }
+  
+  if (N == n_iter && do_print) {
+    cat('Did not converge in', n_steps, 'steps.\n')
+  }
+  
+  if (suppress_df) {
+    return(n_steps) 
+  } else {
+    lnew_data <- quickdf(lnew_data)
+    out <- cbind(lnew_data, data.frame(freq_og = cogs_og$freq,
+                          props_og = cogs_og$props,
+                          props_target = pool_df$prop))
+    return (list(out, number_rejected, n_steps))
+  }
+}
+```
+
+## Getting Cogs Counts
+```{r}
+no_sd_cs <- no_sd[no_sd$cDiagnosis4 == 'CS',]
+cogs_counts_cs <- plyr::count(no_sd_cs, c('cRace2', 'cHispanicorLatino', 'cGender'))
+cogs_counts_cs$props <- cogs_counts_cs$freq / sum(cogs_counts_cs$freq)
+cogs_counts_cs <- group_code_gen(cogs_counts_cs, group_codes_df)
+cogs_counts_cs
+
+no_sd_sz <- no_sd[no_sd$cDiagnosis4 == 'SZSAFD',]
+cogs_counts_sz <- plyr::count(no_sd_sz, c('cRace2', 'cHispanicorLatino', 'cGender'))
+cogs_counts_sz$props <- cogs_counts_sz$freq / sum(cogs_counts_sz$freq)
+cogs_counts_sz <- group_code_gen(cogs_counts_sz, group_codes_df)
+cogs_counts_sz
+```
+
+
+## Generating the pool
+```{r}
+pool_cs <- pool_gen('CS', no_sd, acs1865, group_codes_df)
+pool_sz <- pool_gen('SZSAFD', no_sd, acs1865, group_codes_df)
+```
+
+## Testing the new sampling function
+```{r}
+
+s1 <- Sys.time()
+out1 <- sampling_algorithm(cogs_counts_cs[,c('group_code','freq','props')], pool_cs, 0.5, 0.025, 1000, suppress_df = FALSE)
+s2 <- Sys.time()
+
+colnames(cogs_counts_cs)
+
+s2 - s1
+
+s3 <- Sys.time()
+out2 <- sampling_algorithm2(cogs_counts_cs, pool_cs, 0.5, 0.025, 1000, track_rej = TRUE, suppress_df= FALSE)
+
+s4 <- Sys.time()
+
+s4 - s3 # algorithm 2 is faster
+
+s5 <- Sys.time()
+out2 <- sampling_algorithm2(cogs_counts_cs, pool_cs, 0.5, 0.025, 1000, track_rej = FALSE, suppress_df= TRUE)
+
+s6 <- Sys.time()
+
+s6-s5
+# out2[[1]]
+# out1[[1]]
+
+
+n_sim <- 1000
+
+steps_storage <- rep(0, n_sim)
+start_time <- Sys.time()
+for (i in 1:n_sim) {
+  steps_storage[i] <- sampling_algorithm2(cogs_og = cogs_counts_cs, pool_df = pool_cs, scale_factor = 0.5, thresh = 0.025, n_iter = 1000, track_rej = FALSE, suppress_df = TRUE)
+  #steps_storage[i] <- sampling_algorithm(cogs_og = cogs_counts_cs, pool_df = pool_cs, scale_factor = 0.5, thresh = 0.025, n_iter = 1000, suppress_df = TRUE)
+}
+
+end_time <- Sys.time()
+end_time - start_time
+rng <- range(steps_storage)
+# hist(steps_storage, main = 'Number of Resamples until Convergence', breaks = rng[1]:rng[2], xlab = "Number of Resamples")
+```
+
+# Testing the Scale Factor
+```{r, eval = FALSE}
+sf_range <- seq(0.1, 1, by = 0.05)
+thresh_in <- 0.025
+
+# every row will store results for one set of scale factors
+M <- length(sf_range)
+N <- 1000
+
+# matrix to store data
+sf_steps_cs <- matrix(0, nrow = M, ncol = N)
+sf_steps_sz <- matrix(0, nrow = M, ncol = N)
+
+# running the loop for cs
+t1 <- Sys.time()
+for (i in 1:M) {
+  for (j in 1:N) {
+  sf_steps_cs[i,j] <- sampling_algorithm2(cogs_counts_cs[,c('group_code','freq','props')], pool_cs, scale_factor = sf_range[i], thresh = thresh_in, n_iter = 1000)
+  sf_steps_sz[i,j] <- sampling_algorithm2(cogs_counts_sz[,c('group_code','freq','props')], pool_sz, scale_factor = sf_range[i], thresh = thresh_in, n_iter = 1000)
+  }
+}
+
+t2 <- Sys.time()
+t2 - t1 # checking performance
+
+# calculating the row means
+cs_rm <- rowMeans(sf_steps_cs)
+sz_rm <- rowMeans(sf_steps_sz)
+
+# calculating the row variances
+cs_rv <- apply(sf_steps_cs, 1, var)
+sz_rv <- apply(sf_steps_sz, 1, var)
+
+cs_sd <- sqrt(cs_rv)
+sz_sd <-sqrt(sz_rv)
+
+cs_rv
+sz_rv
+cs_rm
+
+max(sz_rm)
+
+plot(NA, xlim = c(0.1, 1), ylim = c(0,200), main = 'Mean Convergence by Diagnosis\n and Scale Factor', xlab = 'Scale Factor', ylab = 'Number of Resamples', sub = 'Error bars represent +/- 1 standard deviation')
+lines(sf_range, cs_rm, col = 'red', lty = 1)
+lines(sf_range, sz_rm, col = 'blue', lty = 2)
+points(sf_range, cs_rm, col = 'red', pch = 19, cex = 0.8)
+points(sf_range, sz_rm, col = 'blue', pch = 19, cex = 0.8)
+
+arrows(sf_range, cs_rm - cs_sd, sf_range, cs_rm + cs_sd, angle=90,
+       col='red', lwd=1.2, lty=1, code=3, length=0.05)
+arrows(sf_range, sz_rm - sz_sd, sf_range, sz_rm + sz_sd, angle=90,
+       col='blue', lwd=1.2, lty=1, code=3, length=0.05)
+
+legend('topright', legend = c('CS', 'SZSAFD'), col = c('red','blue'),lty=1:2, lwd = 1.4)
+
+grid()
+```
+
+# Testing the Threshold
+```{r}
+scale_in <- 0.5
+th_range <- seq(0.01, 0.10, by = 0.005)
+
+# every row will store results for one set of thresholds
+M <- length(th_range)
+N <- 1000
+
+# matrix to store data
+th_steps_cs <- matrix(0, nrow = M, ncol = N)
+th_steps_sz <- matrix(0, nrow = M, ncol = N)
+
+t3<- Sys.time()
+# running the loop
+for (i in 1:M) {
+  for (j in 1:N) {
+  # th_steps_cs[i,j] <- sampling_algorithm2(cogs_counts_cs[,c('group_code','freq','props')], pool_cs, scale_factor = scale_in, thresh = th_range[i], n_iter = 1000)
+  th_steps_sz[i,j] <- sampling_algorithm2(cogs_counts_sz[,c('group_code','freq','props')], pool_sz, scale_factor = scale_in, thresh = th_range[i], n_iter = 1000)
+  }
+}
+t4 <- Sys.time()
+
+t4 - t3
+
+# calculating the row means
+#cs_rm <- rowMeans(th_steps_cs)
+sz_rm <- rowMeans(th_steps_sz)
+
+# calculating the row variances
+#cs_rv <- apply(th_steps_cs, 1, var)
+sz_rv <- apply(th_steps_sz, 1, var)
+
+#cs_sd <- sqrt(cs_rv)
+sz_sd <-sqrt(sz_rv)
+
+#cs_rv
+sz_rv
+#cs_rm
+
+max(sz_rm)
+
+plot(NA, xlim = c(0.01, 0.10), ylim = c(0,200), main = 'Mean Convergence by Diagnosis\n and Threshold', xlab = 'Threshold', ylab = 'Number of Resamples', sub = 'Error bars represent +/- 1 standard deviation')
+#lines(th_range, cs_rm, col = 'red', lty = 1)
+lines(th_range, sz_rm, col = 'blue', lty = 2)
+#points(th_range, cs_rm, col = 'red', pch = 19, cex = 0.8)
+points(th_range, sz_rm, col = 'blue', pch = 19, cex = 0.8)
+
+# arrows(th_range, cs_rm - cs_sd, th_range, cs_rm + cs_sd, angle=90,
+#        col='red', lwd=1.2, lty=1, code=3, length=0.05)
+arrows(th_range, sz_rm - sz_sd, th_range, sz_rm + sz_sd, angle=90,
+       col='blue', lwd=1.2, lty=1, code=3, length=0.05)
+
+legend('topright', legend = c('CS', 'SZSAFD'), col = c('red','blue'),lty=1:2, lwd = 1.4)
+
+grid()
+```
+
+```{r}
+plots.dir.path <- list.files(tempdir(), pattern="rs-graphics", full.names = TRUE); 
+plots.png.paths <- list.files(plots.dir.path, pattern=".png", full.names = TRUE)
+
+plots.png.paths
+file.copy(from=plots.png.paths, to=c('1.png', '2.png', '3.png'))
+```
+
+
+
+
+
+

@@ -1,0 +1,814 @@
+---
+title: "Untitled"
+author: "Daniel Zoleikhaeian"
+date: "2023-03-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r dependencies}
+library(plyr)
+library(dplyr)
+library(readxl)
+
+setwd('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge')
+total_df <- read.csv('bgc_merge_cDiag123_new.csv')
+
+cogs2 <- total_df[total_df$cStudy == 'COGS2', ]
+gpc <- total_df[total_df$cStudy == 'GPC', ]
+cogs2_gpc <- rbind(cogs2, gpc)
+```
+
+# Table 1: Census Data, GPC, COGS2, and COGS2 + GPC
+
+## Average Census Data
+```{r Average Dataset}
+df_check_2010 <- read_xlsx('reproj_30_2010.xlsx')
+df_check_2020 <- read_xlsx('reproj_30_2020.xlsx')
+
+dem_2010 <- df_check_2010[,-1]
+dem_2020 <- df_check_2020[,-1]
+
+df_avg <- df_check_2010
+df_avg[,] <- NA
+df_avg$City <- NULL
+
+for (i in 1:ncol(dem_2010)) {
+  df_avg[,i] <- rowMeans(cbind(dem_2010[,i], dem_2020[,i]))
+  
+}
+
+df_avg <- cbind(df_check_2010$City, df_avg)
+colnames(df_avg)[1] <- 'City'
+
+# Reformatting cities
+for (i in 1:length(df_avg$City)) {
+  df_avg$City[i] <- substr(df_avg$City[i], 1, unlist(gregexpr(',', df_avg$City[i]))[1] - 1)
+}
+
+# Standardizing race acronyms
+colnames(df_avg)[colnames(df_avg) == 'NA'] <- 'AE'
+colnames(df_avg)[colnames(df_avg) == 'NH'] <- 'Not Hispanic'
+colnames(df_avg)[colnames(df_avg) == 'PI'] <- 'NH'
+
+# Counts and proportions, formatted for entry into table
+race_counts <- df_avg[,1:8]
+race_counts <- race_counts[, c('City', 'AA', 'AS', 'AE', 'CA', 'NH', 'MR', 'OT')]
+
+city_tots <- rowSums(race_counts[,-1])
+names(city_tots) <- race_counts$City
+city_tots
+
+race_counts_only <- race_counts[, -1]
+# race_props_2 <- apply(race_counts[-1], MARGIN = 1, function(x) {x / sum(x)})
+# colnames(race_props_2) <- df_avg$City
+# View(t(race_props_2))
+
+for (i in 1:nrow(race_counts_only)) {
+  race_counts_only[i, ] <- race_counts_only[i,] / city_tots[i]
+}
+
+# View(race_counts_only)
+
+df_city <- data.frame(City = race_counts$City)
+
+race_props <- cbind(df_city, race_counts_only)
+View(race_props)
+
+city_totals <- apply(race_counts[,-1], MARGIN = 1, sum)
+
+race_counts_w_tot <- cbind(race_counts, city_totals)
+colnames(race_counts_w_tot)[ncol(race_counts_w_tot)] <- 'Total'
+
+write.csv(race_counts, file = 'census_avg_race_n.csv')
+write.csv(race_props, file = 'census_avg_race_props.csv')
+write.csv(race_counts_w_tot, file = 'census_avg_race_nw_tot.csv')
+```
+
+## 2010 and 2020 census data
+```{r raw counts 2010 and 2020}
+df_2010 <- read_xlsx('reproj_30_2010.xlsx')[, 1:8]
+df_2010 <- df_2010[, c('City', 'AA', 'AS', 'NA', 'CA', 'PI', 'MR', 'OT')]
+write.csv(df_2010, file = 'n_df2010_reord.csv')
+
+df_2020 <- read_xlsx('reproj_30_2020.xlsx')[, 1:8]
+df_2020 <- df_2020[, c('City', 'AA', 'AS', 'NA', 'CA', 'PI', 'MR', 'OT')]
+write.csv(df_2020, file = 'n_df2020_reord.csv')
+```
+
+```{r proportions 2010 and 2020}
+df_2010_props <- apply(df_2010[-1], MARGIN = 1, function(x) {x / sum(x)})
+df_2010_props <- as.data.frame(t(df_2010_props))
+rownames(df_2010_props) <- df_avg$City
+write.csv(df_2010_props, file = '2010_census_props.csv')
+
+df_2020_props <- apply(df_2020[-1], MARGIN = 1, function(x) {x / sum(x)})
+df_2020_props <- as.data.frame(t(df_2020_props))
+rownames(df_2020_props) <- df_avg$City
+write.csv(df_2020_props, file = '2020_census_props.csv')
+```
+
+## Proportions pipeline
+```{r}
+prop_fn <- function(study, total_ds, city_nm, diag4) {
+  ds_subset <- total_ds[total_ds$cStudy %in% study & total_ds$cLocationCity == city_nm & total_ds$cDiagnosis4 %in% diag4, ]
+  
+  ## Converting all races from OT or UNK into OT/UNK
+  ds_subset$cRace[ds_subset$cRace == 'OT' | ds_subset$cRace == 'UNK'] <- 'OT/UNK'
+  
+  race_cts <- plyr::count(ds_subset, 'cRace')
+  
+  race_cts$prop <- race_cts$freq / sum(race_cts$freq)
+  race_cts <- t(race_cts)
+  
+  # for some reason, r converts the dataframe into a vector if you delete a row with only one element
+  if (length(race_cts[1, ]) == 1) {
+    race_name <- race_cts['cRace', 1]
+    race_cts <- as.data.frame(race_cts[-1])
+    colnames(race_cts) <- race_name
+  } else {
+    colnames(race_cts) <- race_cts['cRace', ]
+    race_cts <- race_cts[-1, ]
+  }
+  
+  total_races <- c('AA', 'AS', 'AE', 'CA', 'NH', 'MR', 'OT/UNK')
+  
+  not_in <- which(!(total_races %in% colnames(race_cts)))
+  
+  if (length(not_in) > 0) {
+    for (i in 1:length(not_in)) {
+      zero_df <- data.frame(c(0, 0))
+      race_cts <- cbind(race_cts, zero_df)
+    }
+  
+    colnames(race_cts)[(ncol(race_cts) - length(not_in) + 1):ncol(race_cts)] <- total_races[not_in]
+  }
+  
+  #path <- 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\012623\\Data Table City Proportions\\City Proportions\\'
+  path <- 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 1 - Data Table City Proportions\\City Proportions - All and BSNIP\\'
+  
+  if (length(diag4) > 1) {
+    cond_name <- 'All'
+  }
+  else {
+    cond_name <- diag4
+  }
+  
+  
+  full_path <- paste(path, paste(city_nm, cond_name, 'race', paste(study, collapse = '-'), '.csv', sep = '_'))
+  
+  race_cts <- race_cts[, total_races]
+  
+  if (sum(as.numeric(race_cts[2, ])) == 0) {
+    print(paste(city_nm, 'does not have any individuals for', paste(study, collapse = '-'), 'and Diagnosis', cond_name))
+    return ()
+  }
+  write.csv(race_cts, file = full_path, row.names = F)
+  return (race_cts)
+}
+```
+
+## Looping through individual conditions, the study combinations, and cities
+```{r }
+
+cities_to_examine <- levels(factor(total_df$cLocationCity)) %in% df_avg$City
+cities <- levels(factor(total_df$cLocationCity))[cities_to_examine]
+conditions <- list(levels(factor(total_df$cDiagnosis4)), 'CS', 'SZSAFD', 'BAD12', 'MDD')
+
+for (i in 1:length(cities)) {
+  for(j in 1:length(conditions)) {
+    gpc_df <- prop_fn('GPC', total_df, cities[i], diag4 = conditions[[j]])
+    cogs2_df <- prop_fn('COGS2', total_df, cities[i], diag4 = conditions[[j]])
+    cogs2_gpc_df <- prop_fn(c('GPC', 'COGS2'), total_df, cities[i], diag4 = conditions[[j]])
+  }
+}
+```
+
+## Adding BSNIP1 and BSNIP2
+```{r}
+for (i in 1:length(cities)) {
+  for(j in 1:length(conditions)) {
+    all_df <- prop_fn(unique(total_df$cStudy), total_df, cities[i], diag4 = conditions[[j]])
+    bsnip_df <- prop_fn(c('BSNIP1', 'BSNIP2'), total_df, cities[i], diag4 = conditions[[j]])
+  }
+}
+
+
+```
+
+## Making university proportions
+
+```{r}
+uni_props_fn <- function(df_in, studies_, diag4) {
+  
+  res_df_list() <- list()
+  
+  for (k in 1:length(studies_)) {
+    
+    ds_subset <- df_in[df_in$cStudy %in% studies_ & df_in$cDiagnosis4 %in% diag4, ]
+  cities_ <- unique(ds_subset$cLocationCity)
+
+    ds_subset$cRace[ds_subset$cRace[ds_subset$cRace == 'OT' | ds_subset$cRace == 'UNK'] <- 'OT/UNK']
+    
+    
+    for (i in 1:length(cities_)) {
+      
+      uni_counts <- plyr::count(ds_subset[ds_subset$cLocationCity == cities_[i], ], 'cLocationInstitution')
+      if (nrow(uni_counts) == 0) {
+        next
+      }
+      
+      uni_df1 <- ds_subset[ds_subset$cLocationInstitution == uni_counts$cLocationInstitution[1], ]
+      uni_df1_race_counts <- plyr::count(uni_df1, 'cRace')
+      uni_df1_race_props <- uni_df1_race_counts$freq / sum(uni_df1_race_counts$freq)
+      names(uni_df1_race_props) <- uni_df1_race_counts$cRace
+      
+      
+      uni_df_race_props_df <- as.data.frame(t(uni_df1_race_props), row.names = uni_counts$cLocationInstitution[1])
+      
+      # adding the missing races
+      
+      not_in_races_bool <- !(total_races %in% colnames(uni_df_race_props_df))
+      not_in_races <- total_races[not_in_races_bool]
+      
+      if (length(not_in_races) > 0) {
+        for (j in 1:length(not_in_races)) {
+        
+        df_to_bind <- data.frame(race_hold = 0, row.names = uni_counts$cLocationInstitution[1])
+        
+        uni_df_race_props_df <- cbind(uni_df_race_props_df, df_to_bind)
+      }
+      
+        colnames(uni_df_race_props_df)[(ncol(uni_df_race_props_df) - length(not_in_races) + 1):ncol(uni_df_race_props_df)] <- not_in_races
+      }
+      
+      uni_df_race_props_df <- uni_df_race_props_df[, total_races]
+    
+      
+      if (nrow(uni_counts) > 1) {
+        uni_df2 <- ds_subset[ds_subset$cLocationInstitution == uni_counts$cLocationInstitution[2], ]
+        uni_df2_race_counts <- plyr::count(uni_df2, 'cRace')
+        uni_df2_race_props <- uni_df2_race_counts$freq / sum(uni_df2_race_counts$freq)
+        names(uni_df2_race_props) <- uni_df2_race_counts$cRace
+        
+        uni_df_race_props_df2 <- as.data.frame(t(uni_df2_race_props), row.names = uni_counts$cLocationInstitution[2])
+        
+        # adding the missing races
+        
+        not_in_races_bool <- !(total_races %in% colnames(uni_df_race_props_df2))
+        not_in_races <- total_races[not_in_races_bool]
+        if (length(not_in_races) > 0) {
+        
+            for (j in 1:length(not_in_races)) {
+              
+              df_to_bind <- data.frame(race_hold = 0, row.names = uni_counts$cLocationInstitution[2])
+              
+              uni_df_race_props_df2 <- cbind(uni_df_race_props_df2, df_to_bind)
+            }
+          
+            colnames(uni_df_race_props_df2)[(ncol(uni_df_race_props_df2) - length(not_in_races) + 1):ncol(uni_df_race_props_df2)] <- not_in_races
+          }
+          
+        
+          uni_df_race_props_df2 <- uni_df_race_props_df2[, total_races]
+            
+          uni_df_race_props_df <- rbind(uni_df_race_props_df, uni_df_race_props_df2)
+          rownames(uni_df_race_props_df)[2] <- uni_counts$cLocationInstitution[2]
+      }
+    }
+    
+    res_df_list[[k]] <- res_df_out
+  }
+  
+  path_prefix <- 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\University Proportions\\'
+      
+      if (length(diag4) > 1) {
+        diag_alias <- 'All' 
+      } else {
+        diag_alias <- diag4
+      }
+      
+      path_suffix <- paste(diag_alias, '_', paste(studies_, collapse = '+'), '_uni_props', cities_[i], '.csv', sep = '')
+      path_full <- paste(path_prefix, path_suffix, sep = '')
+      
+      write.csv(uni_df_race_props_df, file = path_full)
+  
+  
+  
+
+  
+}
+
+```
+
+```{r}
+uni_props_fn_og <- function(df_in, studies_, diag4) {
+  
+  ds_subset <- df_in[df_in$cStudy %in% studies_ & df_in$cDiagnosis4 %in% diag4, ]
+  cities_ <- unique(ds_subset$cLocationCity)
+
+  ds_subset$cRace[ds_subset$cRace[ds_subset$cRace == 'OT' | ds_subset$cRace == 'UNK'] <- 'OT/UNK']
+  
+  
+  for (i in 1:length(cities_)) {
+    
+    uni_counts <- plyr::count(ds_subset[ds_subset$cLocationCity == cities_[i], ], 'cLocationInstitution')
+    
+    if (nrow(uni_counts) == 0) {
+      next
+    }
+    
+    uni_counts <- uni_counts[order(-uni_counts$freq), ]
+    
+    uni_df1 <- ds_subset[ds_subset$cLocationInstitution == uni_counts$cLocationInstitution[1], ]
+    uni_df1_race_counts <- plyr::count(uni_df1, 'cRace')
+    uni_df1_race_props <- uni_df1_race_counts$freq / sum(uni_df1_race_counts$freq)
+    names(uni_df1_race_props) <- uni_df1_race_counts$cRace
+    
+    
+    uni_df_race_props_df <- as.data.frame(t(uni_df1_race_props), row.names = uni_counts$cLocationInstitution[1])
+    
+    # adding the missing races
+    
+    not_in_races_bool <- !(total_races %in% colnames(uni_df_race_props_df))
+    not_in_races <- total_races[not_in_races_bool]
+    
+    if (length(not_in_races) > 0) {
+      for (j in 1:length(not_in_races)) {
+      
+      df_to_bind <- data.frame(race_hold = 0, row.names = uni_counts$cLocationInstitution[1])
+      
+      uni_df_race_props_df <- cbind(uni_df_race_props_df, df_to_bind)
+    }
+    
+      colnames(uni_df_race_props_df)[(ncol(uni_df_race_props_df) - length(not_in_races) + 1):ncol(uni_df_race_props_df)] <- not_in_races
+    }
+    
+    uni_df_race_props_df <- uni_df_race_props_df[, total_races]
+  
+    
+    if (nrow(uni_counts) > 1) {
+      uni_df2 <- ds_subset[ds_subset$cLocationInstitution == uni_counts$cLocationInstitution[2], ]
+      uni_df2_race_counts <- plyr::count(uni_df2, 'cRace')
+      uni_df2_race_props <- uni_df2_race_counts$freq / sum(uni_df2_race_counts$freq)
+      names(uni_df2_race_props) <- uni_df2_race_counts$cRace
+      
+      uni_df_race_props_df2 <- as.data.frame(t(uni_df2_race_props), row.names = uni_counts$cLocationInstitution[2])
+      
+      # adding the missing races
+      
+      not_in_races_bool <- !(total_races %in% colnames(uni_df_race_props_df2))
+      not_in_races <- total_races[not_in_races_bool]
+      if (length(not_in_races) > 0) {
+      
+          for (j in 1:length(not_in_races)) {
+            
+            df_to_bind <- data.frame(race_hold = 0, row.names = uni_counts$cLocationInstitution[2])
+            
+            uni_df_race_props_df2 <- cbind(uni_df_race_props_df2, df_to_bind)
+          }
+        
+          colnames(uni_df_race_props_df2)[(ncol(uni_df_race_props_df2) - length(not_in_races) + 1):ncol(uni_df_race_props_df2)] <- not_in_races
+        }
+        
+      
+        uni_df_race_props_df2 <- uni_df_race_props_df2[, total_races]
+          
+        uni_df_race_props_df <- rbind(uni_df_race_props_df, uni_df_race_props_df2)
+        rownames(uni_df_race_props_df)[2] <- uni_counts$cLocationInstitution[2]
+    }
+      
+    path_prefix <- 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\University Proportions\\'
+    
+    if (length(diag4) > 1) {
+      diag_alias <- 'All' 
+    } else {
+      diag_alias <- diag4
+    }
+    
+    path_suffix <- paste(diag_alias, '_', cities_[i], paste(studies_, collapse = '+'), '_uni_props',  '.csv', sep = '')
+    path_full <- paste(path_prefix, path_suffix, sep = '')
+    
+    write.csv(uni_df_race_props_df, file = path_full)
+    
+  }
+  
+}
+```
+
+## Uni props function call
+```{r}
+
+# variables to loop through
+study_combos <- list('GPC', 'COGS2', c('GPC', 'COGS2'))
+cond_list <- list(unique(total_df$cDiagnosis4), 'CS', 'SZSAFD', 'BAD12', 'MDD')
+
+for (i in 1:length(study_combos)) {
+  for (j in 1:length(cond_list)) {
+    uni_props_fn_og(total_df, study_combos[[i]], cond_list[[j]])
+  }
+}
+ 
+
+
+```
+
+## Uni props tester pipeline
+```{r}
+total_races <- c('AA', 'AS', 'AE', 'CA', 'NH', 'MR', 'OT/UNK')
+
+cities_cogs <- unique(cogs2$cLocationCity)
+
+cogs2$cRace[cogs2$cRace[cogs2$cRace == 'OT' | cogs2$cRace == 'UNK'] <- 'OT/UNK']
+
+
+for (i in 1:length(cities_cogs)) {
+  
+  uni_counts <- plyr::count(cogs2[cogs2$cLocationCity == cities_cogs[i], ], 'cLocationInstitution')
+  #View(uni_counts)
+  
+  uni_df1 <- cogs2[cogs2$cLocationInstitution == uni_counts$cLocationInstitution[1], ]
+  uni_df1_race_counts <- plyr::count(uni_df1, 'cRace')
+  uni_df1_race_props <- uni_df1_race_counts$freq / sum(uni_df1_race_counts$freq)
+  names(uni_df1_race_props) <- uni_df1_race_counts$cRace
+  
+  
+  uni_df_race_props_df <- as.data.frame(t(uni_df1_race_props), row.names = uni_counts$cLocationInstitution[1])
+  
+  # adding the missing races
+  
+  not_in_races_bool <- !(total_races %in% colnames(uni_df_race_props_df))
+  not_in_races <- total_races[not_in_races_bool]
+  
+  if (length(not_in_races) > 0) {
+    for (j in 1:length(not_in_races)) {
+    
+    df_to_bind <- data.frame(race_hold = 0, row.names = uni_counts$cLocationInstitution[1])
+    
+    uni_df_race_props_df <- cbind(uni_df_race_props_df, df_to_bind)
+  }
+  
+    colnames(uni_df_race_props_df)[(ncol(uni_df_race_props_df) - length(not_in_races) + 1):ncol(uni_df_race_props_df)] <- not_in_races
+  }
+  
+  
+  
+  uni_df_race_props_df <- uni_df_race_props_df[, total_races]
+
+  
+  #View(uni_df_race_props_df)
+  
+  
+  if (nrow(uni_counts) > 1) {
+    uni_df2 <- cogs2[cogs2$cLocationInstitution == uni_counts$cLocationInstitution[2], ]
+    uni_df2_race_counts <- plyr::count(uni_df2, 'cRace')
+    uni_df2_race_props <- uni_df2_race_counts$freq / sum(uni_df2_race_counts$freq)
+    names(uni_df2_race_props) <- uni_df2_race_counts$cRace
+    
+    uni_df_race_props_df2 <- as.data.frame(t(uni_df2_race_props), row.names = uni_counts$cLocationInstitution[2])
+    
+    # adding the missing races
+    if (length(not_in_races) > 0) {
+      not_in_races_bool <- !(total_races %in% colnames(uni_df_race_props_df2))
+  not_in_races <- total_races[not_in_races_bool]
+  
+  for (j in 1:length(not_in_races)) {
+    
+    df_to_bind <- data.frame(race_hold = 0, row.names = uni_counts$cLocationInstitution[2])
+    
+    uni_df_race_props_df2 <- cbind(uni_df_race_props_df2, df_to_bind)
+  }
+  
+    colnames(uni_df_race_props_df2)[(ncol(uni_df_race_props_df2) - length(not_in_races) + 1):ncol(uni_df_race_props_df2)] <- not_in_races
+    }
+    
+  
+  uni_df_race_props_df2 <- uni_df_race_props_df2[, total_races]
+    
+    uni_df_race_props_df <- rbind(uni_df_race_props_df, uni_df_race_props_df2)
+    rownames(uni_df_race_props_df)[2] <- uni_counts$cLocationInstitution[2]
+  }
+  
+  path_prefix <- 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\University Proportions\\'
+  path_full <- paste(path_prefix, 'COGS2_uni_props', cities_cogs[i], '.csv', sep = '')
+  
+  write.csv(uni_df_race_props_df, file = path_full)
+  
+}
+
+
+
+
+
+```
+
+# Table 2: Proportion Differences (Observed - Census Average)
+
+## Proportion Differences (Observed - Census Average)
+
+### Dependency: Finding Proportion Differences
+```{r}
+race_cities_plot_data2 <- function (null_df, tot_df, disease, study, race_acr) {
+  
+  obs_df <- tot_df[tot_df$cStudy %in% study & tot_df$cDiagnosis4 %in% disease, ]
+  
+  obs_cities <- obs_df$cLocationCity[obs_df$cRace == race_acr]
+  
+  test_cities <- intersect(null_df$City, obs_cities)
+  
+  null_race_cts <- null_df[, 1:8]
+
+  null_race_cts <- df_avg[, 1:8]
+  null_race_props <- null_race_cts
+
+  for (i in 1:nrow(null_race_cts)) {
+    city_tot <- sum(null_race_cts[i, 2:8])
+    null_race_props[i, 2:8] <- null_race_cts[i,2:8] / city_tot
+  }
+  null_race_props <- null_race_props[null_race_props$City %in% test_cities,]
+  null_race_props <- null_race_props[order(null_race_props$City), ]
+  
+  brc <- obs_df %>%  
+    dplyr::group_by(cRace, cLocationCity) %>%  
+    dplyr::summarise(total_count=n(), .groups = 'drop')
+  
+  brc <- brc[brc$cLocationCity %in% test_cities, ]
+  
+  brc <- brc[order(brc$cLocationCity), ]
+  brc$Prop <- NA
+  
+  # Turning counts into proportions
+  for (i in 1:length(test_cities)) {
+    brc$Prop[brc$cLocationCity == test_cities[i]] <- brc$total_count[brc$cLocationCity == test_cities[i]] / sum(brc$total_count[brc$cLocationCity == test_cities[i]])
+  }
+  
+  null_row <- as.data.frame(null_race_props[,c('City', race_acr)])
+  obs_races <- brc[brc$cRace == race_acr, ]
+  obs_prop <- obs_races$Prop
+  
+  ## Begin output variables to send to lm() and plot()
+  propdif <- obs_prop - null_row[,2] ## response
+  names(propdif) <- test_cities
+  
+  city_cts <- plyr::count(obs_df$cLocationCity)
+  ct_to_plot <- city_cts$freq[city_cts$x %in% test_cities] ## predictor 1
+  
+  null_race_cts <- null_race_cts[null_race_cts$City %in% test_cities, ]
+  race_of_interest_null <- null_race_cts[, colnames(null_race_cts) == race_acr] ## predictor 2
+  
+  null_race_sums <- as.data.frame(apply(null_race_cts[,-1], 1, sum)) ## predictor 3
+  colnames(null_race_sums) <- 'Total City Population'
+  
+  output <- list(propdif, ct_to_plot, race_of_interest_null, null_race_sums[,1])
+  names(output) <- c('Prop dif', 'city sample', 'census average race count', 'census average pop total')
+  
+  return (output)
+  
+}
+```
+
+
+### Proportion Deltas
+
+### Pre-Processing for Proportion Deltas Pipeline
+```{r}
+total_df_copy <- total_df
+total_df_copy$cRace[total_df$cRace == 'OT/UNK' | total_df$cRace == 'UNK'] <- 'OT'
+race_acrs <- c('AA', 'AS', 'AE', 'CA', 'NH', 'MR', 'OT')
+city_vec <- df_avg$City
+cond_list <- list(unique(total_df$cDiagnosis4), 'CS', 'SZSAFD', 'BAD12', 'MDD')
+df_tot_props <- data.frame(matrix(, nrow=length(city_vec), ncol=0))
+rownames(df_tot_props) <- city_vec
+
+```
+
+### Proportion Deltas Pipeline
+```{r}
+for (i in 1:length(cond_list)) {
+  for (j in 1:length(race_acrs)) {
+    deltas <- race_cities_plot_data2(df_avg, total_df_copy, disease = cond_list[[i]], study = c('GPC', 'COGS2'), race_acr = race_acrs[j])
+    prop_difs <- as.data.frame(deltas$`Prop dif`)
+    
+    not_in <- which(!(city_vec %in% rownames(prop_difs)))
+  city_vec[not_in]
+  
+    zero_vec <- rep(0, length(not_in))
+    names(zero_vec) <- city_vec[not_in]
+    
+    zero_vec_df <- (data.frame(zero_vec))
+    colnames(zero_vec_df) <- 'hold'
+    colnames(prop_difs) <- 'hold'
+    
+    prop_difs <- rbind(prop_difs, zero_vec_df)
+    
+    #View(prop_difs)
+    
+    prop_difs <- prop_difs[city_vec, ]
+    names(prop_difs) <- city_vec
+    prop_difs <- data.frame(prop_difs)
+    colnames(prop_difs) <- race_acrs[j]
+    
+    df_tot_props <- cbind(df_tot_props, prop_difs)
+  }
+}
+
+write.csv(df_tot_props, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 2 - Proportion Deltas\\prop_delts_cogsgpc_041023.csv', row.names = F)
+```
+
+
+
+#### Tester case 2
+```{r}
+
+for (i in 1:length(race_acrs)) {
+  deltas <- race_cities_plot_data2(df_avg, total_df_copy, disease = unique(total_df$cDiagnosis4), study = c('GPC', 'COGS2'), race_acr = race_acrs[i])
+  prop_difs <- as.data.frame(deltas$`Prop dif`)
+  
+  not_in <- which(!(city_vec %in% rownames(prop_difs)))
+city_vec[not_in]
+
+  zero_vec <- rep(0, length(not_in))
+  names(zero_vec) <- city_vec[not_in]
+  
+  zero_vec_df <- (data.frame(zero_vec))
+  colnames(zero_vec_df) <- 'hold'
+  colnames(prop_difs) <- 'hold'
+  
+  prop_difs <- rbind(prop_difs, zero_vec_df)
+  
+  #View(prop_difs)
+  
+  prop_difs <- prop_difs[city_vec, ]
+  names(prop_difs) <- city_vec
+  prop_difs <- data.frame(prop_difs)
+  colnames(prop_difs) <- race_acrs[i]
+  
+  df_tot_props <- cbind(df_tot_props, prop_difs)
+
+}
+View(df_tot_props)
+
+write.csv(df_tot_props, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 2 - Proportion Deltas\\prop_delts_cogsgpc_041023.csv', row.names = F)
+```
+
+#### Proportion Deltas Pipeline with All Studies
+```{r}
+
+city_vec <- df_avg$City
+cond_list <- list(unique(total_df$cDiagnosis4), 'CS', 'SZSAFD', 'BAD12', 'MDD')
+df_tot_props_all <- data.frame(matrix(, nrow=length(city_vec), ncol=0))
+rownames(df_tot_props_all) <- city_vec
+
+for (i in 1:length(cond_list)) {
+  for (j in 1:length(race_acrs)) {
+    deltas <- race_cities_plot_data2(df_avg, total_df_copy, disease = cond_list[[i]], study = c('GPC', 'COGS2', 'BSNIP1', 'BSNIP2'), race_acr = race_acrs[j])
+    prop_difs <- as.data.frame(deltas$`Prop dif`)
+    
+    not_in <- which(!(city_vec %in% rownames(prop_difs)))
+  city_vec[not_in]
+  
+    zero_vec <- rep(0, length(not_in))
+    names(zero_vec) <- city_vec[not_in]
+    
+    zero_vec_df <- (data.frame(zero_vec))
+    colnames(zero_vec_df) <- 'hold'
+    colnames(prop_difs) <- 'hold'
+    
+    prop_difs <- rbind(prop_difs, zero_vec_df)
+    
+    #View(prop_difs)
+    
+    prop_difs <- prop_difs[city_vec, ]
+    names(prop_difs) <- city_vec
+    prop_difs <- data.frame(prop_difs)
+    colnames(prop_difs) <- race_acrs[j]
+    
+    df_tot_props_all <- cbind(df_tot_props_all, prop_difs)
+  }
+
+}
+
+write.csv(df_tot_props_all, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 2 - Proportion Deltas\\prop_delts_all_040523.csv', row.names = F)
+
+
+
+```
+
+
+
+# Table 3: Regression Results for COGS2 + GPC
+```{r}
+
+studies <- c('COGS2', 'GPC')
+out_list <- list()
+#lm_results_df <- data.frame(matrix(NA, nrow=21, ncol=0))
+lm_results_df <- data.frame(matrix(NA, nrow = 12, ncol = 0))
+
+for (i in 1:length(cond_list)) {
+  for (j in 1:length(race_acrs)) {
+    
+    in_list <- race_cities_plot_data2(df_avg, total_df_copy, cond_list[[i]], studies, race_acrs[j])
+    
+    out_list[[length(out_list) + 1]] <- in_list
+    if (length(cond_list[[i]]) == 1) {
+      names(out_list)[length(out_list)] <- paste(cond_list[[i]], race_acrs[j])
+    } else {
+      names(out_list)[length(out_list)] <- paste('All', race_acrs[j])
+    }
+    
+    out_vec <- c()
+    for (k in 2:4) {
+      if (length(in_list[[1]]) < 1) {
+        #out_vec <- rep(NA, 21)
+        out_vec <- rep(NA, 12)
+        next
+      }
+      
+      lm_res <- lm(in_list[[1]] ~ log(in_list[[k]]) - 1)
+      summary_lm_res <- summary(lm_res)
+      int_coeff_std_pval <- summary_lm_res$coefficients[1, c(1, 2, 4)]
+
+      
+      # if (length(in_list[[1]]) == 1) {
+      #   pred_coeff_std_pval <- rep(NA, 3)
+      # } else {
+      #   pred_coeff_std_pval <- summary_lm_res$coefficients[2, c(1, 2, 4)]
+      # }
+      
+      #r_squared <- summary_lm_res$adj.r.squared
+      r_squared <- summary_lm_res$r.squared
+      #out_vec <- c(out_vec, int_coeff_std_pval, pred_coeff_std_pval, r_squared)
+      out_vec <- c(out_vec, int_coeff_std_pval, r_squared)
+    }
+    
+    lm_results_df <- cbind(lm_results_df, out_vec)
+  }
+}
+
+colnames(lm_results_df) <- rep(race_acrs, 5)
+
+View(lm_results_df)
+
+write.csv(lm_results_df, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 3 - Linear Regression Results\\reg_res_cogsgpc_no_int_r2_040923.csv', row.names = F)
+
+```
+
+# Table 3: Regression Results for COGS2 + GPC + BSNIP12
+```{r}
+studies <- c('COGS2', 'GPC', 'BSNIP1', 'BSNIP2')
+out_list <- list()
+#lm_results_df <- data.frame(matrix(NA, nrow=21, ncol=0))
+lm_results_df <- data.frame(matrix(NA, nrow = 12, ncol = 0))
+
+for (i in 1:length(cond_list)) {
+  for (j in 1:length(race_acrs)) {
+    
+    in_list <- race_cities_plot_data2(df_avg, total_df_copy, cond_list[[i]], studies, race_acrs[j])
+    
+    out_list[[length(out_list) + 1]] <- in_list
+    if (length(cond_list[[i]]) == 1) {
+      names(out_list)[length(out_list)] <- paste(cond_list[[i]], race_acrs[j])
+    } else {
+      names(out_list)[length(out_list)] <- paste('All', race_acrs[j])
+    }
+    
+    out_vec <- c()
+    for (k in 2:4) {
+      if (length(in_list[[1]]) < 1) {
+        #out_vec <- rep(NA, 21)
+        out_vec <- rep(NA, 12)
+        next
+      }
+      
+      lm_res <- lm(in_list[[1]] ~ log(in_list[[k]]) - 1)
+      summary_lm_res <- summary(lm_res)
+      int_coeff_std_pval <- summary_lm_res$coefficients[1, c(1, 2, 4)]
+
+      
+      # if (length(in_list[[1]]) == 1) {
+      #   pred_coeff_std_pval <- rep(NA, 3)
+      # } else {
+      #   pred_coeff_std_pval <- summary_lm_res$coefficients[2, c(1, 2, 4)]
+      # }
+      
+      #r_squared <- summary_lm_res$adj.r.squared
+      r_squared <- summary_lm_res$r.squared
+      #out_vec <- c(out_vec, int_coeff_std_pval, pred_coeff_std_pval, r_squared)
+      out_vec <- c(out_vec, int_coeff_std_pval, r_squared)
+    }
+    
+    lm_results_df <- cbind(lm_results_df, out_vec)
+  }
+}
+
+colnames(lm_results_df) <- rep(race_acrs, 5)
+
+View(lm_results_df)
+
+write.csv(lm_results_df, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 3 - Linear Regression Results\\all_3LR_r2_no_int-041023.csv', row.names = F)
+
+```
+```

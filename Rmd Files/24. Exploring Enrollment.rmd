@@ -1,0 +1,227 @@
+---
+title: "24. Exploring Enrollment"
+author: "Daniel Zoleikhaeian"
+date: "2023-04-10"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+ pdf()
+
+library(dplyr)
+library(plyr)
+library(ggplot2)
+us_data <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+head(us_data)
+us_data$cEnrollmentYear <- substr(us_data$cEnrollmentDateYear, 1,4)
+```
+
+# Histograms for CS & SZSAFD combined
+```{r}
+us_data_subset_CS_SZSAFD <- us_data[us_data$cDiagnosis4 %in% c('SZSAFD', 'CS'), ]
+year_hist_CSSZSAFD <- hist(as.numeric(us_data_subset_CS_SZSAFD$cEnrollmentYear),
+     main = 'US subjects CS and SZSAFD Enrollment Years',
+     freq = F,
+     xlab = 'Enrollment Year')
+year_hist_CSSZSAFD$density <- cumsum(year_hist_CSSZSAFD$density)
+plot(year_hist_CSSZSAFD, freq = F, main = 'CS/SZSAFD Cumulative Density of Years',
+     xlab = 'Enrollment Year')
+
+# Proportions for CS and SZSAFD
+nrow(us_data_subset_CS_SZSAFD)
+sum(us_data_subset_CS_SZSAFD$cEnrollmentYear %in% c(2007:2013)) / nrow(us_data_subset_CS_SZSAFD)
+sum(us_data_subset_CS_SZSAFD$cEnrollmentYear == 2010)/ nrow(us_data_subset_CS_SZSAFD)
+sum(us_data_subset_CS_SZSAFD$cEnrollmentYear %in% c(2014:2020)) / nrow(us_data_subset_CS_SZSAFD)
+```
+
+# Histograms for All Conditions
+```{r}
+us_data_subset <- us_data[us_data$cDiagnosis4 %in% c('SZSAFD', 'CS', 'MDD', 'BAD12'), ]
+year_hist <- hist(as.numeric(us_data_subset$cEnrollmentYear),
+     freq = F,
+     main = 'US subjects CS, SZSAFD, BAD12, and MDD Enrollment Years',
+     xlab = 'Enrollment Year')
+
+year_hist$density <- cumsum(year_hist$density)
+plot(year_hist, freq = F, main = 'Cumulative Density of All Subject Enrollment Year',
+     xlab = 'Enrollment Year')
+
+# Proportions for all conditions
+nrow(us_data_subset)
+sum(us_data_subset$cEnrollmentYear %in% c(2007:2013)) / nrow(us_data_subset)
+sum(us_data_subset$cEnrollmentYear == 2010)/ nrow(us_data_subset)
+sum(us_data_subset$cEnrollmentYear %in% c(2014:2020)) / nrow(us_data_subset)
+```
+
+# Truncated Dataset: 2010-2020
+```{r}
+us_data_10_20 <- us_data[us_data$cEnrollmentYear %in% c(2010:2020), ]
+nrow(us_data_10_20)
+hist(as.numeric(us_data_10_20$cEnrollmentYear), breaks = 10)
+hist(as.numeric(us_data_10_20$cEnrollmentYear), breaks = 10, freq = F)
+levels(factor(us_data_10_20$cEnrollmentYear))
+```
+
+# Dependecy: race_plot_data2
+```{r}
+library(readxl)
+total_df <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+
+race_cities_plot_data2 <- function (null_df, tot_df, disease, study, race_acr) {
+  
+  obs_df <- tot_df[tot_df$cStudy %in% study & tot_df$cDiagnosis4 %in% disease, ]
+  
+  obs_cities <- obs_df$cLocationCity[obs_df$cRace == race_acr]
+  
+  test_cities <- intersect(null_df$City, obs_cities)
+  
+  null_race_cts <- null_df[, 1:8]
+
+  null_race_cts <- df_avg[, 1:8]
+  null_race_props <- null_race_cts
+
+  for (i in 1:nrow(null_race_cts)) {
+    city_tot <- sum(null_race_cts[i, 2:8])
+    null_race_props[i, 2:8] <- null_race_cts[i,2:8] / city_tot
+  }
+  null_race_props <- null_race_props[null_race_props$City %in% test_cities,]
+  null_race_props <- null_race_props[order(null_race_props$City), ]
+  
+  brc <- obs_df %>%  
+    dplyr::group_by(cRace, cLocationCity) %>%  
+    dplyr::summarise(total_count=n(), .groups = 'drop')
+  
+  brc <- brc[brc$cLocationCity %in% test_cities, ]
+  
+  brc <- brc[order(brc$cLocationCity), ]
+  brc$Prop <- NA
+  
+  # Turning counts into proportions
+  for (i in 1:length(test_cities)) {
+    brc$Prop[brc$cLocationCity == test_cities[i]] <- brc$total_count[brc$cLocationCity == test_cities[i]] / sum(brc$total_count[brc$cLocationCity == test_cities[i]])
+  }
+  
+  null_row <- as.data.frame(null_race_props[,c('City', race_acr)])
+  obs_races <- brc[brc$cRace == race_acr, ]
+  obs_prop <- obs_races$Prop
+  
+  ## Begin output variables to send to lm() and plot()
+  propdif <- obs_prop - null_row[,2] ## response
+  names(propdif) <- test_cities
+  
+  city_cts <- plyr::count(obs_df$cLocationCity)
+  ct_to_plot <- city_cts$freq[city_cts$x %in% test_cities] ## predictor 1
+  
+  null_race_cts <- null_race_cts[null_race_cts$City %in% test_cities, ]
+  race_of_interest_null <- null_race_cts[, colnames(null_race_cts) == race_acr] ## predictor 2
+  
+  null_race_sums <- as.data.frame(apply(null_race_cts[,-1], 1, sum)) ## predictor 3
+  colnames(null_race_sums) <- 'Total City Population'
+  
+  output <- list(propdif, ct_to_plot, race_of_interest_null, null_race_sums[,1])
+  names(output) <- c('Prop dif', 'Total City Population', 'census average race count', 'census average pop total')
+  
+  return (output)
+  
+}
+
+df_check_2010 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2010.xlsx')
+df_check_2020 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2020.xlsx')
+
+dem_2010 <- df_check_2010[,-1]
+dem_2020 <- df_check_2020[,-1]
+
+df_avg <- df_check_2010
+df_avg[,] <- NA
+df_avg$City <- NULL
+
+for (i in 1:ncol(dem_2010)) {
+  df_avg[,i] <- rowMeans(cbind(dem_2010[,i], dem_2020[,i]))
+  
+}
+
+df_avg <- cbind(df_check_2010$City, df_avg)
+colnames(df_avg)[1] <- 'City'
+
+# Reformatting cities
+for (i in 1:length(df_avg$City)) {
+  df_avg$City[i] <- substr(df_avg$City[i], 1, unlist(gregexpr(',', df_avg$City[i]))[1] - 1)
+}
+
+# Standardizing race acronyms
+colnames(df_avg)[colnames(df_avg) == 'NA'] <- 'AE'
+colnames(df_avg)[colnames(df_avg) == 'NH'] <- 'Not Hispanic'
+colnames(df_avg)[colnames(df_avg) == 'PI'] <- 'NH'
+```
+
+# Pre-processing
+```{r}
+total_df_copy <- us_data_10_20
+total_df_copy$cRace[us_data_10_20$cRace == 'OT/UNK' | us_data_10_20$cRace == 'UNK'] <- 'OT'
+race_acrs <- c('AA', 'AS', 'AE', 'CA', 'NH', 'MR', 'OT')
+city_vec <- df_avg$City
+studies <- c('GPC', 'COGS2', 'BSNIP1', 'BSNIP2')
+```
+
+# Checking linearity assumptions
+```{r}
+AA_res <- race_cities_plot_data2(df_avg, total_df_copy, disease = 'CS', study = c('GPC', 'COGS2', 'BSNIP1', 'BSNIP2'), race_acr = 'AA')
+
+hist((AA_res[[1]]))
+
+lm_res <- lm(AA_res[[1]] ~ log(AA_res[[4]]))
+plot(lm_res)
+```
+
+# Checking normality of response and predictor
+```{r}
+race_vec <- c('CA', 'AA', 'AS')
+dis_list <- list(unique(total_df_copy$cDiagnosis4), 'CS', 'SZSAFD')
+for (i in 1:length(race_vec)) {
+  for (j in 1:length(dis_list)) {
+    rcp_obj <- race_cities_plot_data2(df_avg, total_df_copy, dis_list[[j]], study = c('GPC', 'COGS2', 'BSNIP1', 'BSNIP2'), race_acr = race_vec[i])
+    plot(density(rcp_obj[[1]]), main = paste(race_vec[i], paste(dis_list[[j]], collapse = ' ')), xlab = paste('prop_dif', paste(race_vec[i], dis_list[[j]])))
+    plot(density(rcp_obj[[4]]), main = paste(race_vec[i], paste(dis_list[[j]], collapse = ' ')), xlab = 'Total Population')
+    plot(density(log10(rcp_obj[[4]])), main = paste(race_vec[i], paste(dis_list[[j]], collapse = ' ')), xlab = 'log(Total Population)')
+    # lm_obj <- lm(rcp_obj[[1]] ~ log(rcp_obj[[4]]))
+    # plot(lm_obj, 1)
+    # plot(lm_obj, 2)
+    # plot(lm_obj, 4)
+  }
+}
+```
+
+Right-skew:
+* Total population --> solution: log10 transform
+* AA CS prop_dif (moderate-weak right skew)
+* AS CS (moderate right skew)
+
+Left-skew
+* AS SZSAFD prop_dif (moderate-weak left skew)
+
+Conclusion: Not significantly bad skew in response variable 
+
+# New regressions for discovered skew
+```{r}
+AA_CS_obj <- race_cities_plot_data2(df_avg, total_df_copy, disease = 'CS', study = studies, race_acr = 'AA')
+lm_AA_CS <- lm(log(AA_CS_obj[[1]] + 0.5) ~ log10(AA_CS_obj[[4]]) - 1)
+summary(lm_AA_CS)
+lm_AA_CS_og <-  lm(AA_CS_obj[[1]] ~ log10(AA_CS_obj[[4]]) - 1)
+summary(lm_AA_CS_og)
+
+plot(density(log(AA_CS_obj[[1]] + 0.5)))
+plot(density(AA_CS_obj[[1]]))
+
+plot(lm_AA_CS_og)
+plot(lm_AA_CS)
+dev.off()
+```
+
+Conclusion: Keep current mode of fitting

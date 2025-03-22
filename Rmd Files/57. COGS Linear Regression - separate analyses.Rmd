@@ -1,0 +1,349 @@
+---
+title: "57. COGS Linear Regression"
+author: "Daniel Zoleikhaeian"
+date: "2023-08-23"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# loading dataset and libraries
+```{r}
+library(car)
+library(readxl)
+library(ggplot2)
+library(GGally)
+library(splines)
+library(plyr)
+library(effects)
+df <- read_xlsx('C:/Users/danie/Documents/Joshi Lab Materials/3 Studies Dataset/Dataset Merge/COGS_data.xlsx')
+
+colnames(df)
+col_sub <- c('SEX', 'GROUP', 'RACE','AGE','ETHNICITY','MMN135_205')
+
+df_sub <- df[, col_sub]
+head(df_sub)
+
+colnames(df_sub)
+
+# omitting missing data
+df_sub <- df_sub[complete.cases(df_sub), ] # 1628, as expected
+
+# transforming the categorical variables by a dictionary
+dict_transform <- function(keys, values, vec) {
+  for (i in 1:length(keys)) {
+    vec[vec == keys[i]] <- values[i]
+  }
+  return (vec)
+}
+
+df_sub$ETHNICITY2 <- factor(dict_transform(c(1,2), c('Yes', 'No'), df_sub$ETHNICITY) )
+df_sub$RACE2 <- factor(dict_transform(1:7, c('AE','AS','NH','AA','CA','MR','UNK'), df_sub$RACE))
+df_sub$GROUP2 <- factor(dict_transform(c(1,2), c('CS', 'SZSAFD'), df_sub$GROUP))
+
+# releveling
+df_sub$ETHNICITY2 <- relevel(df_sub$ETHNICITY2, ref = 'No')
+df_sub$RACE2 <- relevel(df_sub$RACE2, ref = 'AA')
+df_sub$GROUP2 <- relevel(df_sub$GROUP2, ref = 'CS')
+
+# subsetting by group
+cs <- df_sub[df_sub$GROUP == 1, ]
+sz <- df_sub[df_sub$GROUP == 2, ]
+```
+
+# Begin analysis
+
+## Checking Distributions
+```{r}
+ggpairs(cs[, c('AGE','MMN135_205')]) # bimodality of age among 
+shapiro.test(cs$AGE) # p = 3.03e-15
+hist(cs$AGE) # not that many people between ages 30 and 45
+
+cs$AGE2 <- abs(cs$AGE - mean(cs$AGE))
+shapiro.test(cs$AGE2)# p = 2.993e-08
+hist(cs$AGE2) # bimodality eliminated, mild right skew introduced
+              # still not exactly normally, but looks better 
+
+
+
+ggpairs(sz[, c('AGE','MMN135_205')]) # more normal for sz, but severe left skew
+shapiro.test(sz$AGE) # p << 0.05
+
+# suggested transformation: sqrt(max(AGE) - AGE)
+hist(sqrt(max(sz$AGE) - sz$AGE)) # still left-skewed, but less severe
+sz$AGE2<- sqrt(max(sz$AGE) - sz$AGE)
+```
+
+## Performing the regression: CS
+```{r}
+mmn_cs <- lm(MMN135_205 ~ SEX + RACE2 + ETHNICITY2 + AGE, data = cs)
+summary(mmn_cs)
+
+# checking fit
+plot(mmn_cs, 1) # some curvature in beginning; variance looks mostly uniform, except at beginning; no obvious curvature
+plot(mmn_cs, 2) # residuals are mostly normally distributed but deviate a lot at the tails
+plot(mmn_cs, 4) # very few influential points, but point 170 is somewhat concerning
+
+# dropping 170 to see if the coefficients change
+mmn_cs_170 <- lm(MMN135_205 ~ SEX + RACE2 + ETHNICITY2 + AGE, data = cs[-170,])
+summary(mmn_cs_170)
+
+data.frame(mmn_cs$coefficients, mmn_cs_170$coefficients) # coefficients don't change much
+
+outlierTest(mmn_cs) # confirms 170 is an outier, but it is not significantly influential
+
+# checking for curvature
+residualPlots(mmn_cs) # suggests adding a quadratic term to age; otherwise no interactions needed
+
+residualPlot(mmn_cs) # mild curvature for low and high fitted values
+
+# new model with quadratic term
+mmn_cs_qd <- lm(MMN135_205 ~ SEX + RACE2 + ETHNICITY2 + AGE + I(AGE^2), data = cs)
+summary(mmn_cs_qd)
+
+residualPlots(mmn_cs_qd) # needs added complexity
+# per literature, add SEX:AGE interaction
+mmn_cs_qd2 <- lm(MMN135_205 ~ RACE2 + SEX*AGE + ETHNICITY2, data = cs)
+residualPlots(mmn_cs_qd2)
+summary(mmn_cs_qd2) # still not complex enough
+
+anova(mmn_cs_qd2, mmn_cs_qd) # interaction model does slightly better
+
+plot(mmn_cs_qd2, 1) # curvature is worse; leaning towards simpler model
+plot(mmn_cs_qd2, 2) # still tail deviation
+plot(mmn_cs_qd2, 4) # same points
+
+# checking if quadratic model does better
+anova(mmn_cs_qd, mmn_cs) # quadratic model does better
+
+# checking non-constant variance
+ncvTest(mmn_cs_qd) # p << 0.05, so there is evidence of ncv
+
+# estimating the weights to address NCV
+plot((residuals(mmn_cs_qd))^2 ~ fitted(mmn_cs_qd), data = cs,
+     main = 'Estimating Weights') # high variance towards the early-middle
+
+## looks like a 2nd degree polynomial would estimate the weights
+res_mod_mn <- lm(((residuals(mmn_cs_qd))^2) ~ poly(fitted(mmn_cs_qd), degree = 2, raw = TRUE)) # one extra dergee for good luck
+lines(fitted(mmn_cs_qd), predict(res_mod_mn), col = 'blue')
+summary(res_mod_mn)
+wts <- 1/(predict(res_mod_mn))
+
+wls_mmn <- lm(MMN135_205 ~ RACE2 + ETHNICITY2 + SEX + AGE + I(AGE^2), data = cs, weights = wts)
+ncvTest(wls_mmn) # p = 0.958 non-constant variance addressed
+
+# checking results
+summary(wls_mmn)
+
+plot(wls_mmn, 1)
+```
+
+Main findings:
+* Race modulates the slope on Age; varying levels of significantly increased MMN
+* Higher age = higher MMN, quadratic relationship
+* Higher overall MMN for Males
+
+## Performing the regression: SZ
+```{r}
+mmn_sz <- lm(MMN135_205 ~ SEX + RACE2 + ETHNICITY2 + AGE, data = sz)
+summary(mmn_sz)
+
+# checking fit
+plot(mmn_sz, 1) # some curvature; variance looks mostly uniform,
+plot(mmn_sz, 2) # residuals are mostly normally distributed but deviate slightly at the tails
+plot(mmn_sz, 4) # very few influential points
+
+outlierTest(mmn_sz) # shockingly no outliers
+
+# checking for curvature
+residualPlots(mmn_sz) # suggests adding a quadratic term to age
+
+residualPlot(mmn_sz) # mild curvature for low and high fitted values
+
+# new model with quadratic term
+mmn_sz_qd <- lm(MMN135_205 ~ SEX + RACE2 + ETHNICITY2 + AGE + I(AGE^2), data = sz)
+
+residualPlots(mmn_sz_qd) # this fixed the complexity issue
+
+# trying an interaction model just for fun
+mmn_sz_itx <- lm(MMN135_205 ~ SEX*AGE + RACE2 + ETHNICITY2 + SEX*I(AGE^2), data = sz)
+residualPlots(mmn_sz_itx) # this model seems more satisfactory
+
+anova(mmn_sz_itx, mmn_sz_qd) # does not fit significantly better than the no interaction model
+
+summary(mmn_sz_itx) # slightly higher R-squared (0.001 points higher)
+summary(mmn_sz_qd)
+
+plot(mmn_sz_qd, 1) # curvature fixed
+plot(mmn_sz_qd, 2) # still tail deviation
+plot(mmn_sz_qd, 4) # same points
+
+# checking if quadratic model does better
+anova(mmn_sz_qd, mmn_sz) # quadratic model does better
+
+# checking non-constant variance
+ncvTest(mmn_sz_qd) # p << 0.05, so there is evidence of ncv
+
+# estimating the weights to address NCV
+plot((residuals(mmn_sz_qd))^2 ~ fitted(mmn_sz_qd), data = sz,
+     main = 'Estimating Weights') # high variance towards the early-middle
+
+## looks like a 2nd degree polynomial would estimate the weights
+res_mod_mn <- lm(((residuals(mmn_sz_qd))^2) ~ poly(fitted(mmn_sz_qd), degree = 2, raw = TRUE)) # one extra dergee for good luck
+lines(fitted(mmn_sz_qd), predict(res_mod_mn), col = 'blue')
+summary(res_mod_mn)
+wts <- 1/(predict(res_mod_mn))
+
+wls_mmn_sz <- lm(MMN135_205 ~ RACE2 + ETHNICITY2 + SEX + AGE + I(AGE^2), data = sz, weights = wts)
+ncvTest(wls_mmn_sz) # p = 0.929 non-constant variance addressed
+
+# checking results
+summary(wls_mmn_sz)
+
+plot(wls_mmn_sz, 1)
+
+View(data.frame(CS = wls_mmn$coefficients, CS_pval = round(summary(wls_mmn)$coefficients[,4], 3), SZ = wls_mmn_sz$coefficients, SZ_pval = round(summary(wls_mmn_sz)$coefficients[,4], 3)))
+```
+
+Main findings:
+* More pronounced linear effect of AGE on MMN than in CS
+* Males also have higher MMN than females , but effect is not significant
+
+## Trying out group code
+
+### Group code manipulations
+```{r}
+group_codes_df <- data.frame(Race2 = rep(c('AA', 'AE', 'AS','CA','NH','OT/MR'), rep(4,6)),
+                             Hispan2 = rep(rep(c('No','Yes'), c(2,2)), 6),
+                             Gender = rep(c('F','M'), 12),
+                             group_code = 1:24)
+
+group_code_gen <- function(df, handbook) {
+  df$group_code <- rep(0,nrow(df))
+  for (n in 1:nrow(df)) {
+    for (i in 1:nrow(handbook)) {
+      if (df[n,1] == handbook[i,1] &&
+          df[n,2] == handbook[i,2] &&
+          df[n,3] == handbook[i,3]) {
+        df$group_code[n] <- handbook$group_code[i]
+        break
+      } else {
+        next
+      }
+    }
+  }
+  return (df)
+}
+```
+
+### Making new dataframes for use with group code function
+```{r}
+colnames(cs)
+cs24 <- data.frame(Race = cs$RACE2,
+                   Hispan = cs$ETHNICITY2,
+                   Gender = cs$SEX,
+                   Age = cs$AGE)
+cs24$RACE2[cs24$Race %in% c('MR', 'UNK')] <- 'MR/OT'
+cs24$MMN <- cs$MMN135_205
+cs24 <- group_code_gen(cs24, group_codes_df)
+head(cs24)
+
+sz24 <- data.frame(Race = sz$RACE2,
+                   Hispan = sz$ETHNICITY2,
+                   Gender = sz$SEX,
+                   Age = sz$AGE)
+sz24$RACE2[sz24$Race %in% c('MR', 'UNK')] <- 'MR/OT'
+sz24$MMN <- sz$MMN135_205
+sz24 <- group_code_gen(sz24, group_codes_df)
+```
+
+### Regressing on group codes: CS
+```{r}
+colnames(cs24)
+cs24_lr <- lm(MMN ~ factor(group_code) + Age, data = cs24)
+summary(cs24_lr)
+plot(cs24_lr, 1) # some curvature in beginning
+
+residualPlots(cs24_lr) # add quadratic term on age
+
+cs24_lr_qd <- lm(MMN ~ factor(group_code) + Age + I(Age^2), data = cs24)
+plot(cs24_lr_qd, 1) # more flat overall
+residualPlots(cs24_lr_qd) # still need added complexity 
+
+anova(cs24_lr, cs24_lr_qd) # quadratic model fits better
+
+ncvTest(cs24_lr_qd) # there is non-constant variance issue
+
+# estimating the weights to address NCV
+plot((residuals(cs24_lr_qd))^2 ~ fitted(cs24_lr_qd), data = cs24,
+     main = 'Estimating Weights') # high variance towards the early-middle
+
+## looks like a 2nd degree polynomial would estimate the weights
+res_mod_mn <- lm(((residuals(cs24_lr_qd))^2) ~ poly(fitted(cs24_lr_qd), degree = 2, raw = TRUE)) # one extra dergee for good luck
+lines(fitted(cs24_lr_qd), predict(res_mod_mn), col = 'blue')
+summary(res_mod_mn)
+wts <- 1/(predict(res_mod_mn))
+
+wls_cs24qd <- lm(MMN ~ factor(group_code) + Age + I(Age^2), data = cs24, weights = wts)
+ncvTest(wls_cs24qd) # p = 0.866 non-constant variance addressed
+
+# checking results
+summary(wls_cs24qd)
+```
+
+### Same thing for SZ
+```{r}
+sz24_lr <- lm(MMN ~ factor(group_code) + Age, data = sz24)
+summary(sz24_lr)
+plot(sz24_lr, 1) # not much ruvature to begin with
+
+residualPlots(sz24_lr) # maybe add quadratic term on age
+
+sz24_lr_qd <- lm(MMN ~ factor(group_code) + Age + I(Age^2), data = sz24)
+plot(sz24_lr_qd, 1) # doesn't really look better
+residualPlots(sz24_lr_qd) # no added complexity needed
+
+anova(sz24_lr, sz24_lr_qd) # moderate suggestion that quadratic model fits better
+
+ncvTest(sz24_lr_qd) # there is non-constant variance issue
+
+# estimating the weights to address NCV
+plot((residuals(sz24_lr_qd))^2 ~ fitted(sz24_lr_qd), data = sz24,
+     main = 'Estimating Weights') # high variance towards the early-middle
+
+## looks like a 2nd degree polynomial would estimate the weights
+res_mod_mn <- lm(((residuals(sz24_lr_qd))^2) ~ poly(fitted(sz24_lr_qd), degree = 2, raw = TRUE)) # one extra dergee for good luck
+lines(fitted(sz24_lr_qd), predict(res_mod_mn), col = 'blue')
+summary(res_mod_mn)
+wts <- 1/(predict(res_mod_mn))
+
+wls_sz24qd <- lm(MMN ~ factor(group_code) + Age + I(Age^2), data = sz24, weights = wts)
+ncvTest(wls_sz24qd) # p = 0.950 non-constant variance addressed
+
+# checking results
+summary(wls_sz24qd)
+```
+
+## Final Model Collection with adj r squared comparisons
+```{r}
+plot(wls_mmn, 1)
+plot(wls_mmn_sz, 1)
+plot(wls_cs24qd, 1)
+plot(wls_sz24qd, 1)
+model_collection <- data.frame(mod_name = c('wls_cs', 
+                                            'wls_sz', 
+                                            'wls_cs24',
+                                            'wls_sz24'),
+                               adj.r2 = c(summary(wls_mmn)$adj.r.squared,
+                                          summary(wls_mmn_sz)$adj.r.squared,
+                                          summary(wls_cs24qd)$adj.r.squared,
+                                          summary(wls_sz24qd)$adj.r.squared)
+                               )
+View(model_collection)
+```
+
+

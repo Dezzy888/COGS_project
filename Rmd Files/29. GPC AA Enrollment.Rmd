@@ -1,0 +1,87 @@
+---
+title: "AA Recruitment in GPC"
+author: "Daniel Zoleikhaeian"
+date: "2023-04-26"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+```
+
+# Loading Dataset
+```{r}
+us_data <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+us_data <- us_data[us_data$cStudy == 'BSNIP2',]
+us_data$cEnrollmentYear <- substr(us_data$cEnrollmentDateYear, 1,4)
+```
+
+# Data Subsets by Year Range
+```{r}
+gpc_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013, ]
+gpc_1416 <- us_data[us_data$cEnrollmentYear %in% 2014:2016, ]
+gpc_1720 <- us_data[us_data$cEnrollmentYear %in% 2017:2020, ]
+```
+
+# Getting Race Counts and Proportions
+```{r}
+race_1013 <- plyr::count(gpc_1013, c('cLocationCity', 'cRace'))
+race_1416 <- plyr::count(gpc_1416, c('cLocationCity', 'cRace'))
+race_1720 <- plyr::count(gpc_1720, c('cLocationCity', 'cRace'))
+
+city_reps_1013 <- plyr::count(race_1013[,1:2], 'cLocationCity')
+city_reps_1416 <- plyr::count(race_1416[,1:2], 'cLocationCity')
+city_reps_1720 <- plyr::count(race_1720[,1:2], 'cLocationCity')
+
+
+city_1013 <- plyr::count(gpc_1013, 'cLocationCity') 
+city_1416 <- plyr::count(gpc_1416, 'cLocationCity')
+city_1720 <- plyr::count(gpc_1720, 'cLocationCity')
+
+tots_1013 <- rep(city_1013$freq, city_reps_1013$freq)
+tots_1416 <- rep(city_1416$freq, city_reps_1416$freq)
+tots_1720 <- rep(city_1720$freq, city_reps_1720$freq)
+
+race_1013$prop <- race_1013$freq / tots_1013
+race_1416$prop <- race_1416$freq / tots_1416
+race_1720$prop <- race_1720$freq / tots_1720
+
+race_1013$yeargrp <- rep('2010-2013', nrow(race_1013))
+race_1416$yeargrp <- rep('2014-2016', nrow(race_1416))
+race_1720$yeargrp <- rep('2017-2020', nrow(race_1720))
+
+race_total <- rbind(race_1013, race_1416, race_1720)
+```
+
+# Plotting counts and proportions
+
+## Helper Function
+```{r}
+plot_Bar <- function(data_in, year_range, y_col, y_name) {
+  ggplot(data = data_in, aes_string(x = "cLocationCity", y = y_col, fill = "yeargrp")) +
+  geom_bar(stat = "identity", position='dodge') + 
+  ggtitle(paste(year_range, 'AA',  y_name)) 
+}
+```
+
+## Year Grouping Data
+
+### Proportions-total
+```{r}
+plot_Bar(race_total[race_total$cRace == 'AA', ], '2010-2020', 'prop', 'Proportions')
+```
+
+### Counts-total
+```{r}
+plot_Bar(race_total[race_total$cRace == 'AA', ], '2010-2020', 'freq', 'Counts')
+```
+

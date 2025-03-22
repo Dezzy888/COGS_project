@@ -1,0 +1,273 @@
+---
+title: "cDiag3_UCLA"
+author: "Daniel Zoleikhaeian"
+date: "2023-02-02"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setting up environment
+
+```{r setting up environment}
+library(ggplot2)
+library(dplyr)
+library(plyr)
+
+df <- read.csv('bgc_merge_cDiag123_new.csv')
+
+df_LA <- df[df$cLocationCity == 'Los Angeles', ]
+levels(factor(df_LA$cLocationInstitution))
+df_La_counts <- as.data.frame(plyr::count(df_LA, 'cLocationInstitution'))
+df_La_diags <- as.data.frame(plyr::count(df_LA, 'cDiagnosis3'))
+View(df_La_diags)
+
+df_LA_bdI <- df_LA %>% 
+  dplyr::group_by(cLocationInstitution, cDiagnosis3) %>%
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+View(df_LA_bdI)
+
+View(df_La_counts)
+
+df_gpc <- df[df$cStudy == 'GPC', ]
+df_ucla <- df[df$cLocationInstitution == 'UCLA', ]
+df_ucla_gpc <- df_ucla[df_ucla$cStudy == 'GPC', ]
+df_ucla_cogs2 <- df_ucla[df_ucla$cStudy == 'COGS2', ]
+```
+
+## Counting by race and diagnosis
+
+```{r cDiag3 by race and diagnosis for gpc and cogs2}
+
+# counting elements by race and diagnosis
+gpc_cDiag3_ucla <- df_ucla_gpc %>% 
+  dplyr::group_by(cRace, cDiagnosis3) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+cogs2_cDiag3_ucla <- df_ucla_cogs2 %>% 
+  dplyr::group_by(cRace, cDiagnosis3) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+# generating proportions
+gpc_cDiag3_ucla$proportion <- gpc_cDiag3_ucla$total_count / sum(gpc_cDiag3_ucla$total_count)
+cogs2_cDiag3_ucla$proportion <- cogs2_cDiag3_ucla$total_count / sum(cogs2_cDiag3_ucla$total_count)
+
+# View(gpc_cDiag3_ucla)
+# View(cogs2_cDiag3_ucla)
+```
+
+## Differences in UCLA CS between groups 
+
+```{r differences in controls}
+
+cs_gpc <- gpc_cDiag3_ucla[gpc_cDiag3_ucla$cDiagnosis3 == 'CS',]
+cs_cogs2 <- cogs2_cDiag3_ucla[cogs2_cDiag3_ucla$cDiagnosis3 == 'CS',]
+
+cs_gpc$cStudy <- rep('GPC', nrow(cs_gpc))
+cs_cogs2$cStudy <- rep('COGS2', nrow(cs_cogs2))
+
+# View(cs_gpc)
+# View(cs_cogs2)
+cs_ucla <- rbind(cs_gpc, cs_cogs2)
+
+race_counts_cs <- ggplot(data = cs_ucla, aes(x = cRace, y = total_count, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  geom_text(aes(label = total_count), vjust = 0) + 
+  ggtitle('Counts of Race in Controls') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# race_counts_cs
+```
+
+## Examining cDiagnosis3
+
+### Examining cDiagnosis3 Counts
+
+```{r plotting counts}
+
+df_combined <- rbind(df_ucla_gpc, df_ucla_cogs2)
+
+df_combined <- df_combined %>% 
+  dplyr::group_by(cStudy, cDiagnosis3) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+df_combined$Proportion
+
+overall_cDiag3 <- ggplot(data = df_combined, aes(x = cDiagnosis3, y = total_count, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  geom_text(aes(label = total_count), vjust = 0) + 
+  ggtitle('Counts of cDiagnosis3') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# overall_cDiag3
+```
+
+### Examining cDiagnosis3 Proportions
+
+```{r plotting proportions}
+gpc_la_diag3 <- as.data.frame(plyr::count(df_ucla_gpc, 'cDiagnosis3'))
+cogs2_la_diag3 <- as.data.frame(plyr::count(df_ucla_cogs2, 'cDiagnosis3'))
+
+gpc_la_diag3$Proportion <- gpc_la_diag3$freq / sum(gpc_la_diag3$freq)
+gpc_la_diag3$cStudy <- rep('GPC', nrow(gpc_la_diag3))
+
+cogs2_la_diag3$Proportion <- cogs2_la_diag3$freq / sum(cogs2_la_diag3$freq)
+cogs2_la_diag3$cStudy <- rep('COGS2', nrow(cogs2_la_diag3))
+
+props_combined <- rbind(gpc_la_diag3, cogs2_la_diag3)
+
+props_cDiag3 <- ggplot(data = props_combined, aes(x = cDiagnosis3, y = Proportion, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  ggtitle('Proportions of cDiagnosis3') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# props_cDiag3
+```
+
+## Examining Race and cDiagnosis3 Interaction between Studies
+
+```{r by race, study, and cDiagnosis3}
+b_rcd <- df_ucla %>% 
+  dplyr::group_by(cRace, cDiagnosis3, cStudy) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+# View(b_rcd)
+```
+
+```{r in African Americans}
+# African Americans
+b_aa <- b_rcd[b_rcd$cRace == 'AA', ]
+b_aa <- b_aa[order(b_aa$cStudy), ]
+b_aa$Proportion <- c(b_aa$total_count[b_aa$cStudy == 'COGS2'] / sum(b_aa$total_count[b_aa$cStudy == 'COGS2']), b_aa$total_count[b_aa$cStudy == 'GPC'] / sum(b_aa$total_count[b_aa$cStudy == 'GPC']))
+# View(b_aa)
+
+aa_plot <- ggplot(data = b_aa, aes(x = cDiagnosis3, y = Proportion, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  ggtitle('Proportions of cDiagnosis3 in African Americans') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))  
+
+# aa_plot
+```
+
+```{r  in American Indians/Alaska Natives}
+b_ae <- b_rcd[b_rcd$cRace == 'AE', ]
+b_ae <- b_ae[order(b_ae$cStudy), ]
+b_ae$Proportion <- c(b_ae$total_count[b_ae$cStudy == 'COGS2'] / sum(b_ae$total_count[b_ae$cStudy == 'COGS2']), b_ae$total_count[b_ae$cStudy == 'GPC'] / sum(b_ae$total_count[b_ae$cStudy == 'GPC']))
+# View(b_ae)
+
+ae_plot <- ggplot(data = b_ae, aes(x = cDiagnosis3, y = Proportion, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  ggtitle('Proportions of cDiagnosis3 in American Indians/Alaska Natives') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))  
+# all had SZSAFD
+```
+
+```{r Asian Americans}
+b_as <- b_rcd[b_rcd$cRace == 'AS', ]
+
+b_as <- b_as[order(b_as$cStudy), ]
+b_as$Proportion <- c(b_as$total_count[b_as$cStudy == 'COGS2'] / sum(b_as$total_count[b_as$cStudy == 'COGS2']), b_as$total_count[b_as$cStudy == 'GPC'] / sum(b_as$total_count[b_as$cStudy == 'GPC']))
+# View(b_as)
+
+as_plot <- ggplot(data = b_as, aes(x = cDiagnosis3, y = Proportion, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  ggtitle('Proportions of cDiagnosis3 in Asian Americans') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))  
+
+# as_plot
+```
+
+```{r in Caucasians}
+b_ca <- b_rcd[b_rcd$cRace == 'CA', ]
+b_ca <- b_ca[order(b_ca$cStudy), ]
+b_ca$Proportion <- c(b_ca$total_count[b_ca$cStudy == 'COGS2'] / sum(b_ca$total_count[b_ca$cStudy == 'COGS2']), b_ca$total_count[b_ca$cStudy == 'GPC'] / sum(b_ca$total_count[b_ca$cStudy == 'GPC']))
+# View(b_ca)
+
+ca_plot <- ggplot(data = b_ca, aes(x = cDiagnosis3, y = Proportion, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  ggtitle('Proportions of cDiagnosis3 in Caucasian Americans') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))  
+
+# ca_plot
+```
+
+```{r Multiracial}
+b_mr <- b_rcd[b_rcd$cRace == 'MR', ]
+b_mr <- b_mr[order(b_mr$cStudy), ]
+b_mr$Proportion <- c(b_mr$total_count[b_mr$cStudy == 'COGS2'] / sum(b_mr$total_count[b_mr$cStudy == 'COGS2']), b_mr$total_count[b_mr$cStudy == 'GPC'] / sum(b_mr$total_count[b_mr$cStudy == 'GPC']))
+# View(b_mr)
+
+mr_plot <- ggplot(data = b_mr, aes(x = cDiagnosis3, y = Proportion, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  ggtitle('Proportions of cDiagnosis3 in Multiracial Americans') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))  
+
+# mr_plot
+```
+
+```{r in Native Hawaiians/Pacific Islanders}
+b_nh <- b_rcd[b_rcd$cRace == 'NH', ]
+b_nh <- b_nh[order(b_nh$cStudy), ]
+b_nh$Proportion <- c(b_nh$total_count[b_nh$cStudy == 'COGS2'] / sum(b_nh$total_count[b_nh$cStudy == 'COGS2']), b_nh$total_count[b_nh$cStudy == 'GPC'] / sum(b_nh$total_count[b_nh$cStudy == 'GPC']))
+# View(b_nh)
+
+nh_plot <- ggplot(data = b_nh, aes(x = cDiagnosis3, y = Proportion, fill = cStudy)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = c('orange', 'darkgreen')) +
+  ggtitle('Proportions of cDiagnosis3 in Native Hawaiians/Pacific Islanders') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))  
+
+# nh_plot
+
+```
+
+## Plot Collection
+
+```{r Plots}
+race_counts_cs
+overall_cDiag3
+props_cDiag3
+aa_plot
+ae_plot
+as_plot
+ca_plot
+mr_plot
+nh_plot
+```
+
+## Main Findings for UCLA
+
+* GPC has a higher proportion of SZSAFD than COGS2
+* GPC lacks healthy controls for many races
+* COGS2 has more balanced proportions of controls to patients across all races
+* COGS2 has more Caucasians in controls 

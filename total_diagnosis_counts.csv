@@ -1,0 +1,87 @@
+"","cStudy","cDiagnosis","total_count","Proportion"
+"1","BSNIP1","BP",311,0.334408602150538
+"2","BSNIP1","SAD",223,0.239784946236559
+"3","BSNIP1","SZ",396,0.425806451612903
+"4","BSNIP2","ASD",9,0.0044269552385637
+"5","BSNIP2","BP",290,0.14264633546483
+"6","BSNIP2","BPnon",35,0.0172159370388588
+"7","BSNIP2","NC",623,0.306443679291687
+"8","BSNIP2","SAD",500,0.245941957697983
+"9","BSNIP2","SZ",560,0.275454992621741
+"10","BSNIP2","UNK",16,0.00787014264633546
+"11","COGS2","CTRL",1062,0.428744448930157
+"12","COGS2","SAFD",62,0.0250302785627776
+"13","COGS2","SZ",1353,0.546225272507065
+"14","GPC","Bipolar I disorder",1067,0.0338032631078726
+"15","GPC","Bipolar I with psychosis",2952,0.0935213052431491
+"16","GPC","Bipolar II disorder",80,0.00253445271661651
+"17","GPC","Bipolar II with psychosis",17,0.000538571202281007
+"18","GPC","Control",14089,0.446348804055124
+"19","GPC","Control: depression",767,0.0242990654205607
+"20","GPC","Control: does not qualify",202,0.00639949310945668
+"21","GPC","Does not qualify",156,0.00494218279740219
+"22","GPC","Hypomanic Episode/s",3,9.5041976873119e-05
+"23","GPC","Major depressive disorder",48,0.0015206716299699
+"24","GPC","Major depressive disorder with psychosis",10,0.000316806589577063
+"25","GPC","Major depressive disorder, moderate",15,0.000475209884365595
+"26","GPC","Major depressive disorder, severe",13,0.000411848566450182
+"27","GPC","Manic episode (Bipolar I)",120,0.00380167907492476
+"28","GPC","Manic episode with psychosis (Bipolar I)",209,0.00662125772216062
+"29","GPC","Psychosis NOS",5,0.000158403294788532
+"30","GPC","Schizoaffective disorder, bipolar type",2093,0.0663076191984793
+"31","GPC","Schizoaffective disorder, depressive type",577,0.0182797402185965
+"32","GPC","Schizophrenia",8,0.000253445271661651
+"33","GPC","Schizophrenia, Hebephrenic",2907,0.0920956755900523
+"34","GPC","Schizophrenia, Paranoid",1297,0.0410898146681451
+"35","GPC","Schizophrenia, Paranoid; Bipolar I",2,6.33613179154126e-05
+"36","GPC","Schizophrenia, Paranoid; Bipolar II",7,0.000221764612703944
+"37","GPC","Schizophrenia, Paranoid; Major depressive disorder",39,0.00123554569935055
+"38","GPC","Schizophrenia, Undifferentiated",4279,0.135561539680025
+"39","GPC","Schizophrenia, Undifferentiated; Bipolar I",4,0.000126722635830825
+"40","GPC","Schizophrenia, Undifferentiated; Bipolar II",12,0.000380167907492476
+"41","GPC","Schizophrenia, Undifferentiated; Hypomania",1,3.16806589577063e-05
+"42","GPC","Schizophrenia, Undifferentiated; Major depressive disorder",294,0.00931411373356566
+"43","GPC","Schizophreniform",2,6.33613179154126e-05
+"44","GPC","Schizophreniform; Major depressive disorder",1,3.16806589577063e-05
+"45","GPC","Unaffected",289,0.00915571043877713
+"46","Total","ASD",9,0.000243210376976084
+"47","Total","Bipolar I disorder",1067,0.0288339413592758
+"48","Total","Bipolar I with psychosis",2952,0.0797730036481556
+"49","Total","Bipolar II disorder",80,0.00216187001756519
+"50","Total","Bipolar II with psychosis",17,0.000459397378732604
+"51","Total","BP",601,0.0162410485069585
+"52","Total","BPnon",35,0.000945818132684772
+"53","Total","Control",14089,0.38073233346845
+"54","Total","Control: depression",767,0.0207269287934063
+"55","Total","Control: does not qualify",202,0.00545872179435211
+"56","Total","CTRL",1062,0.028698824483178
+"57","Total","Does not qualify",156,0.00421564653425213
+"58","Total","Hypomanic Episode/s",3,8.10701256586948e-05
+"59","Total","Major depressive disorder",48,0.00129712201053912
+"60","Total","Major depressive disorder with psychosis",10,0.000270233752195649
+"61","Total","Major depressive disorder, moderate",15,0.000405350628293474
+"62","Total","Major depressive disorder, severe",13,0.000351303877854344
+"63","Total","Manic episode (Bipolar I)",120,0.00324280502634779
+"64","Total","Manic episode with psychosis (Bipolar I)",209,0.00564788542088907
+"65","Total","NC",623,0.0168355627617889
+"66","Total","Psychosis NOS",5,0.000135116876097825
+"67","Total","SAD",723,0.0195379002837454
+"68","Total","SAFD",62,0.00167544926361303
+"69","Total","Schizoaffective disorder, bipolar type",2093,0.0565599243345494
+"70","Total","Schizoaffective disorder, depressive type",577,0.015592487501689
+"71","Total","Schizophrenia",8,0.000216187001756519
+"72","Total","Schizophrenia, Hebephrenic",2907,0.0785569517632752
+"73","Total","Schizophrenia, Paranoid",1297,0.0350493176597757
+"74","Total","Schizophrenia, Paranoid; Bipolar I",2,5.40467504391298e-05
+"75","Total","Schizophrenia, Paranoid; Bipolar II",7,0.000189163626536954
+"76","Total","Schizophrenia, Paranoid; Major depressive disorder",39,0.00105391163356303
+"77","Total","Schizophrenia, Undifferentiated",4279,0.115633022564518
+"78","Total","Schizophrenia, Undifferentiated; Bipolar I",4,0.00010809350087826
+"79","Total","Schizophrenia, Undifferentiated; Bipolar II",12,0.000324280502634779
+"80","Total","Schizophrenia, Undifferentiated; Hypomania",1,2.70233752195649e-05
+"81","Total","Schizophrenia, Undifferentiated; Major depressive disorder",294,0.00794487231455209
+"82","Total","Schizophreniform",2,5.40467504391298e-05
+"83","Total","Schizophreniform; Major depressive disorder",1,2.70233752195649e-05
+"84","Total","SZ",2309,0.0623969733819754
+"85","Total","Unaffected",289,0.00780975543845426
+"86","Total","UNK",16,0.000432374003513039

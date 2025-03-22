@@ -1,0 +1,239 @@
+---
+title: "27. 2010-2020 Race Proportion Differences by City"
+author: "Daniel Zoleikhaeian"
+date: "2023-04-19"
+output: pdf_document
+---
+
+# knit set-up
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(tidy = TRUE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+# Dependencies
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+```
+
+# Datasets
+```{r}
+dat_2010 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2010.xlsx')
+dat_2020 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2020.xlsx')
+View(dat_2010)
+View(dat_2020)
+
+dat_2010_races <- dat_2010[,2:8]
+dat_2020_races <- dat_2020[,2:8]
+
+rownames(dat_2010_races) <- dat_2010$City
+rownames(dat_2020_races) <- dat_2020$City
+View(dat_2010_races)
+```
+
+# Making proportions
+```{r}
+
+# Making proportions
+prop_2010 <- as.data.frame(t(apply(dat_2010_races, MARGIN = 1, function(x) {x / sum(x)}, simplify = T)))
+
+# Making a city column
+prop_2010$City <- rownames(prop_2010)
+prop_2010 <- prop_2010[, c(ncol(prop_2010), 1:(ncol(prop_2010) - 1))]
+rownames(prop_2010) <- NULL
+
+# reformatting the City vector
+prop_2010$City <- lapply(prop_2010$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+# Adding a Year column
+prop_2010$Year <- rep(2010, nrow(prop_2010))
+
+prop_2020 <- as.data.frame(t(apply(dat_2020_races, MARGIN = 1, function(x) {x / sum(x)}, simplify = T)))
+
+prop_2020$City <- rownames(prop_2020)
+prop_2020 <- prop_2020[, c(ncol(prop_2020), 1:(ncol(prop_2020) - 1))]
+rownames(prop_2020) <- NULL
+
+prop_2020$City <- lapply(prop_2020$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+prop_2020$Year <- rep(2020, nrow(prop_2020))
+
+# stacking the dataframes on top of each other
+prop_2010_2020 <- rbind(prop_2010, prop_2020)
+
+# checking if the rows are equal
+nrow(prop_2010_2020) == (nrow(prop_2010) + nrow(prop_2020))
+
+# standardizing acronyms
+colnames(prop_2010_2020)[colnames(prop_2010_2020) == 'NA'] <- 'AE'
+colnames(prop_2010_2020)[colnames(prop_2010_2020) == 'PI'] <- 'NH'
+```
+
+# Visualization 1: Plots of the proportions in 2010 and 2020
+```{r}
+# Plots for each race
+# Lines for each city
+
+prop_2010_2020$City <- factor(as.character(prop_2010_2020$City))
+
+race_acrs <- c('AA', 'AS', 'CA', 'AE', 'NH', 'MR', 'OT')
+
+plot_race_cities <- function(race, data_in) {
+  ggplot(data_in, aes_string(x="Year",
+                      y=race,
+                      col="City")) +
+  geom_point() + 
+  ylab('Proportion') +
+  geom_smooth(method=lm, se = FALSE) + 
+  ggtitle(paste('Race Proportions for', race))
+}
+
+plot_collection <- lapply(race_acrs, plot_race_cities, data_in = prop_2010_2020)
+
+# plot_collection
+```
+
+Conclusions:
+* Race proportions not stable over time
+* Shifts generally less than 0.05 for most cities
+
+# Hypothesis Testing: Proportion Difference between 2010 and 2020
+
+## Calculating proportion differences between 2010 and 2020
+```{r}
+
+# Calculated as proportion in 2020 - proportion in 2010
+
+prop_difs <- prop_2020[,2:8] - prop_2010[,2:8]
+prop_difs$City <- prop_2020$City
+
+# standardizing acronyms
+colnames(prop_difs)[colnames(prop_difs) == 'NA'] <- 'AE'
+colnames(prop_difs)[colnames(prop_difs) == 'PI'] <- 'NH'
+
+# re-ordering columns
+prop_difs <- prop_difs[, c('City', race_acrs)]
+
+# making sub-dataframes for AA, AS, and CA
+AA_df <- prop_difs[, c('City', 'AA')]
+AA_df$p_val <- rep(-1, nrow(AA_df))
+
+AS_df <- prop_difs[, c('City', 'AS')]
+AS_df$p_val <- rep(-1, nrow(AS_df))
+
+CA_df <- prop_difs[, c('City', 'CA')]
+CA_df$p_val <- rep(-1, nrow(CA_df))
+```
+
+## Visualization 2: Proportion Differences of Races across Cities
+```{r}
+
+bar_plot_race_cities <- function(race_acr, data_in) {
+  ggplot(data = data_in, aes_string(x="City",y=race_acr, color="City")) +
+    geom_bar(stat='identity', fill = 'white') +
+    ylab('Difference (2020 - 2010)') +
+    ggtitle(paste(race_acr, ':Proportion Difference between 2010 and 2020'))+ 
+    xlab('City') + 
+    coord_flip() +
+    theme(legend.position="none")
+}
+
+prop_difs$City <- as.factor(unlist(prop_difs$City))
+
+plot_collection2 <- lapply(race_acrs, bar_plot_race_cities, data_in = prop_difs)
+
+# plot_collection2
+
+## Running plot collections side by side
+for (i in 1:7) {
+  print(plot_collection[[i]])
+  print(plot_collection2[[i]])
+}
+
+```
+
+## Testing if proportion differences are significant for each city
+```{r}
+dat_2010_races$City_n <- rowSums(dat_2010_races)
+dat_2020_races$City_n <- rowSums(dat_2020_races)
+
+dat_2010_races <- as.data.frame(dat_2010_races)
+dat_2020_races <- as.data.frame(dat_2020_races)
+
+# Probabilities deviate far from 0.5, so do not use Z-test
+# Use Fisher exact test instead
+## Benefits: Works with small counts
+## Drawbacks: Conservative; hard to reject null hypothesis
+
+## EXAMPLE: AA in Athens between 2010 and 2020
+df <- data.frame(AA_yes = c(dat_2010_races[1, 'AA'], dat_2020_races[1, 'AA']),
+                 AA_no = c(dat_2010_races$City_n[1] - dat_2010_races[1, 'AA'], dat_2020_races$City_n[1] - dat_2020_races[1, 'AA']), 
+                 row.names = c('2010', '2020'))
+View(df)
+res <- fisher.test(df)
+res$p.value
+
+# Looping through all the columns of AA, AS, and CA
+
+add_fish_p_val <- function(race_acr) {
+  
+  p_vals <- rep(0, nrow(dat_2010_races))
+  
+  for (i in 1:nrow(dat_2010_races)) {
+    df <- data.frame(Race_yes = c(dat_2010_races[i, race_acr], dat_2020_races[i, race_acr]),
+                 Race_no = c(dat_2010_races$City_n[i] - dat_2010_races[i, race_acr], dat_2020_races$City_n[i] - dat_2020_races[i, race_acr]), 
+                 row.names = c('2010', '2020'))
+   res <- fisher.test(df)
+   p_vals[i] <- res$p.value
+  }
+  
+  
+  return (p_vals)
+    
+}
+
+AA_df$p_val <- add_fish_p_val('AA')
+AS_df$p_val <- add_fish_p_val('AS')
+CA_df$p_val <- add_fish_p_val('CA')
+
+```
+
+## Dataframe of proportion differences and p-values
+```{r}
+## African-Americans
+AA_df
+```
+
+```{r}
+## Asian-Americans
+AS_df
+```
+
+
+```{r}
+## Caucasian-Americans
+CA_df
+```
+
+Conclusions:
+
+* Magnitude of differences is small for AS and AA
+  * All differences are significant at the 0.05 level for AS
+  * Some are not significant for AA
+  * High power to detect small difference due to large sample size
+  
+* Magnitude of difference for CA much higher than for AS and AA
+  * General decrease in proportion of CA between 2010 and 2020
+  * All differences are significant
+
+* Suggestion:
+  * Designate a magnitude and p-value cutoff to determine which differences are consequential for the census "average"
+
+# Final Thoughts:
+* Cannot use "average" 2010 and 2020 for the null hypothesis
+  * 2010 and 2020 are different, but magnitude may not be consequential
+

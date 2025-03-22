@@ -1,0 +1,313 @@
+---
+title: "Variation in COGS2/BSNIP - actual years"
+author: "Daniel Zoleikhaeian"
+date: "2023-05-10"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+```
+
+# Census Data
+
+## Datasets
+```{r}
+dat_2010 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2010.xlsx')
+dat_2020 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2020.xlsx')
+
+dat_2010_races <- dat_2010[,2:8]
+dat_2020_races <- dat_2020[,2:8]
+
+rownames(dat_2010_races) <- dat_2010$City
+rownames(dat_2020_races) <- dat_2020$City
+#View(dat_2010_races)
+```
+
+## Making proportions
+```{r}
+
+# Making proportions
+prop_2010 <- as.data.frame(t(apply(dat_2010_races, MARGIN = 1, function(x) {x / sum(x)}, simplify = T)))
+
+# Making a city column
+prop_2010$City <- rownames(prop_2010)
+prop_2010 <- prop_2010[, c(ncol(prop_2010), 1:(ncol(prop_2010) - 1))]
+rownames(prop_2010) <- NULL
+
+# reformatting the City vector
+prop_2010$City <- lapply(prop_2010$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+# Adding a Year column
+prop_2010$Year <- rep(2010, nrow(prop_2010))
+
+prop_2020 <- as.data.frame(t(apply(dat_2020_races, MARGIN = 1, function(x) {x / sum(x)}, simplify = T)))
+
+prop_2020$City <- rownames(prop_2020)
+prop_2020 <- prop_2020[, c(ncol(prop_2020), 1:(ncol(prop_2020) - 1))]
+rownames(prop_2020) <- NULL
+
+prop_2020$City <- lapply(prop_2020$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+prop_2020$Year <- rep(2020, nrow(prop_2020))
+
+# stacking the dataframes on top of each other
+prop_2010_2020 <- rbind(prop_2010, prop_2020)
+
+# checking if the rows are equal
+nrow(prop_2010_2020) == (nrow(prop_2010) + nrow(prop_2020))
+
+# standardizing acronyms
+colnames(prop_2010_2020)[colnames(prop_2010_2020) == 'NA'] <- 'AE'
+colnames(prop_2010_2020)[colnames(prop_2010_2020) == 'PI'] <- 'NH'
+```
+
+## Making LM objects for AA within each cities in prop_2010_2020
+```{r}
+lm_objects <- vector("list", nrow(prop_2010))
+cities <- prop_2010$City
+for (i in 1:length(cities)) {
+  lm_obj <- lm(AA ~ Year, data = prop_2010_2020[unlist(prop_2010_2020$City) == cities[i], ])
+  lm_objects[[i]] <- lm_obj
+}
+
+names(lm_objects) <- cities
+```
+
+## Calculating the 2010-2013 expected proportions based on LM results
+```{r}
+# check years 2010-2013
+years_in <- 2010:2013
+
+# dataframe structure
+exp_props <- data.frame(City = unlist(cities), 
+                        y2010 = rep(0, length(cities)),
+                        y2011 = rep(0, length(cities)),
+                        y2012 = rep(0, length(cities)),
+                        y2013 = rep(0, length(cities)))
+
+# iterate through all the cities, then fill in the data
+for (i in 1:nrow(exp_props)) {
+  exp_props[i, 2:ncol(exp_props)] <- predict(lm_objects[[i]], newdata = data.frame(Year = years_in))
+}
+
+exp_props # expected proportion of AA for 2010-2013 chunk across all cities
+
+# transform to long format
+long_exp_props <- data.frame(City = rep(unlist(cities)),
+                             AA_prop = c(exp_props$y2010,
+                                         exp_props$y2011,
+                                         exp_props$y2012,
+                                         exp_props$y2013),
+                             Year = rep(2010:2013, rep(length(unlist(cities)), length(years_in)))
+                             )
+```
+
+# Loading Dataset
+```{r}
+us_data <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+us_data$cEnrollmentYear <- as.numeric(substr(us_data$cEnrollmentDateYear, 1,4))
+```
+
+# Data Subsets by Year Range
+```{r}
+bsnip1_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013 & us_data$cStudy == 'BSNIP1', ]
+cogs2_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013 & us_data$cStudy == 'COGS2', ]
+gpc_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013 & us_data$cStudy == 'GPC', ]
+
+dat_1013 <- list(bsnip1_1013, cogs2_1013, gpc_1013)
+```
+
+# Getting Race Counts and Proportions from the studies
+```{r}
+
+# studies
+studies <- c('BSNIP1', 'COGS2', 'GPC')
+chunk_dat_1013 <- list(bsnip1_1013, cogs2_1013, gpc_1013)
+
+# list to store dataframes
+## Strucuture:
+### Level 1: Study
+### Level 2: Year
+### Level 3: dataframe with cities
+study_props <- vector("list", 3)
+names(study_props) <- studies
+
+# helper function: race counts to proportion
+count2prop <- function(df_in, year) {
+  
+  df_sub <- df_in[df_in$cEnrollmentYear == year, ]
+  # if (nrow(df_sub) == 0) {
+  #   return()
+  # }
+  race_ct <- plyr::count(df_sub, c('cLocationCity', 'cRace'))
+  city_reps <- plyr::count(race_ct[,1:2], 'cLocationCity')
+  city_totals <- plyr::count(df_sub, 'cLocationCity')
+  tots_repped <- rep(city_totals$freq, city_reps$freq)
+  race_ct$prop <- race_ct$freq / tots_repped
+  return(race_ct)
+  
+}
+
+temp_yr_df_list <- vector("list", length(years_in))
+names(temp_yr_df_list) <- 2010:2013
+
+# level 1
+for (i in 1:length(study_props)) {
+  # level 2
+  for (j in 1:length(years_in)) {
+    # level 3
+    temp_yr_df_list[[j]] <- count2prop(dat_1013[[i]], years_in[j])
+    temp_yr_df_list[[j]]$Study <- rep(studies[i], nrow(temp_yr_df_list[[j]]))
+    temp_yr_df_list[[j]]$Year <- rep(years_in[j], nrow(temp_yr_df_list[[j]]))
+  }
+  study_props[[i]] <- temp_yr_df_list
+}
+
+# checking object
+study_props ## as expected
+
+# Merging all the dataframes into one object
+
+study_props_unlist_inner <- list(dplyr::bind_rows(study_props[[1]], .id='column_label'), dplyr::bind_rows(study_props[[2]], .id='column_label'), dplyr::bind_rows(study_props[[3]], .id='column_label'))  
+
+study_props_concat <- dplyr::bind_rows(study_props_unlist_inner, .id='column_label')
+
+```
+
+# Plotting counts and proportions
+
+## Additional Helper Function
+```{r}
+plot_Lines <- function(data_in, ycol, yname, yr_range, study) {
+  data_in <- data_in[data_in$Study == study, ]
+  ggplot(data_in, aes_string(x='Year',
+                      y=ycol, col = 'cLocationCity'
+                     )) +
+  geom_point(cex = 1.5) + 
+  geom_line(lwd = 1) +
+  ylab(yname) +
+  ggtitle(paste(study, ': ', ' AA ', yname, ' ', yr_range, sep = ''))
+  
+}
+```
+
+## Plotting race proportions for the 3 studies
+
+```{r}
+
+## saving plots as pdf file
+pdf('30ba_COGS2-BSNIP_Variation_1013_actual_year.pdf')
+    
+    
+## Just observing AA
+
+AA_sub <- study_props_concat[study_props_concat$cRace == 'AA', ]
+
+plot_Lines(data_in = AA_sub, yr_range = "2010-2013", ycol = 'prop', yname= 'Proportion', study = "GPC")
+plot_Lines(data_in = AA_sub, yr_range = "2010-2013", ycol = 'prop', yname= 'Proportion', study = "COGS2")
+plot_Lines(data_in = AA_sub, yr_range = "2010-2013", ycol = 'prop', yname= 'Proportion', study = "BSNIP1")
+```
+
+## Getting proportion deltas
+```{r}
+
+## focusing on AA
+AA_sub <- study_props_concat[study_props_concat$cRace == 'AA', ]
+
+## subset the AA_sub further by only looking at the census represented cities
+AA_sub <- AA_sub[AA_sub$cLocationCity %in% cities, ]
+
+# observed - expected
+AA_sub$prop_delt <- rep(0, nrow(AA_sub))
+
+# Loop through rows of AA_sub
+for (i in 1:nrow(AA_sub)) {
+  # Match the city and year from AA_sub with the city and year of the expected prop dataframe
+  AA_sub$prop_delt[i] <- AA_sub$prop[i] - long_exp_props$AA_prop[long_exp_props$City == AA_sub$cLocationCity[i] & long_exp_props$Year == AA_sub$Year[i]]
+}
+```
+
+## Plotting Proportion Deltas by Year: FIX this
+Idea:
+* Make scatter plot (1 for each study)
+- lines for each city
+- x-axis would be year
+- y-axis would be proportion delta
+```{r}
+plot_Lines(data_in = AA_sub, yr_range = "2010-2013", ycol = 'prop_delt', yname= 'Proportion Delta (Observed- Expected)', study = "GPC")
+plot_Lines(data_in = AA_sub, yr_range = "2010-2013", ycol = 'prop_delt', yname= 'Proportion Delta (Observed- Expected)', study = "COGS2")
+plot_Lines(data_in = AA_sub, yr_range = "2010-2013", ycol = 'prop_delt', yname= 'Proportion Delta (Observed- Expected)', study = "BSNIP1")
+```
+
+## Characterizing the variability: this part is fine
+
+Methods used:
+* Range of proportion differences
+* Mean and standard deviation
+  * sensitive to outliers
+* Median and IQR
+  * robust to outliers
+
+```{r}
+
+GPC_mean <- mean(AA_sub$prop_delt[AA_sub$Study == 'GPC'])
+GPC_sd <- sd(AA_sub$prop_delt[AA_sub$Study == 'GPC'])
+
+COGS2_mean <- mean(AA_sub$prop_delt[AA_sub$Study == 'COGS2'])
+COGS2_sd <- sd(AA_sub$prop_delt[AA_sub$Study == 'COGS2'])
+
+BSNIP1_mean <- mean(AA_sub$prop_delt[AA_sub$Study == 'BSNIP1'])
+BSNIP1_sd <- sd(AA_sub$prop_delt[AA_sub$Study == 'BSNIP1'])
+
+prop_delts_1013 <- data.frame(means = c(GPC_mean, COGS2_mean, BSNIP1_mean), 
+                              st_devs = c(GPC_sd, COGS2_sd, BSNIP1_sd), 
+                              Study = c('GPC', 'COGS2', 'BSNIP1'))
+
+bar_plot <- ggplot(data = prop_delts_1013, aes(x = Study, y = means, fill = Study)) +
+  geom_bar(stat = "identity", position='dodge') +
+  geom_errorbar(aes(ymin=means-st_devs, ymax=means+st_devs), width=.2,
+                 position=position_dodge(.9)) + 
+  labs(y = 'Mean Proportion Deltas') +
+  ggtitle('2010-2013: Mean Proportion Deltas with Standard Deviations')
+
+bar_plot + geom_point(data = AA_sub, aes(x = Study, y = prop_delt))
+```
+
+## Beeswarm version: Boxplot + raw points
+```{r}
+library(ggbeeswarm)
+beeswarm.plot <- ggplot(data = AA_sub, aes(x = Study, y = prop_delt, color = Study)) +
+  geom_beeswarm(cex = 3, size = 1.75) + 
+  scale_color_brewer(palette = "Set1") +
+  labs(y = 'Proportion Deltas') +
+  ggtitle('2010-2013: Proportion Deltas with Boxplot Overlay') 
+
+beeswarm.plot + geom_boxplot(data = AA_sub, aes(x = Study, y = prop_delt), alpha = 0.25)
+
+# closing the pdf
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

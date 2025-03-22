@@ -1,0 +1,251 @@
+---
+title: "GPC Variation, 2014-2020"
+author: "Daniel Zoleikhaeian"
+date: "2023-05-03"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Notes:
+* Run this file after running 30. COGS2-BSNIP Variation, 2010-2013
+* Inherited objects:
+  * lm_objects
+  * plot_Bar()
+  * us_data
+  * cities
+  
+# GPC Subsets: Race Counts and Proportions
+## Data Subsets by Year Range
+```{r}
+gpc_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013, ]
+gpc_1416 <- us_data[us_data$cEnrollmentYear %in% 2014:2016, ]
+gpc_1720 <- us_data[us_data$cEnrollmentYear %in% 2017:2020, ]
+```
+
+## Getting Race Counts and Proportions
+```{r}
+race_1013 <- plyr::count(gpc_1013, c('cLocationCity', 'cRace'))
+race_1416 <- plyr::count(gpc_1416, c('cLocationCity', 'cRace'))
+race_1720 <- plyr::count(gpc_1720, c('cLocationCity', 'cRace'))
+
+city_reps_1013 <- plyr::count(race_1013[,1:2], 'cLocationCity')
+city_reps_1416 <- plyr::count(race_1416[,1:2], 'cLocationCity')
+city_reps_1720 <- plyr::count(race_1720[,1:2], 'cLocationCity')
+
+city_1013 <- plyr::count(gpc_1013, 'cLocationCity') 
+city_1416 <- plyr::count(gpc_1416, 'cLocationCity')
+city_1720 <- plyr::count(gpc_1720, 'cLocationCity')
+
+tots_1013 <- rep(city_1013$freq, city_reps_1013$freq)
+tots_1416 <- rep(city_1416$freq, city_reps_1416$freq)
+tots_1720 <- rep(city_1720$freq, city_reps_1720$freq)
+
+race_1013$prop <- race_1013$freq / tots_1013
+race_1416$prop <- race_1416$freq / tots_1416
+race_1720$prop <- race_1720$freq / tots_1720
+
+race_1013$yeargrp <- rep('2010-2013', nrow(race_1013))
+race_1416$yeargrp <- rep('2014-2016', nrow(race_1416))
+race_1720$yeargrp <- rep('2017-2020', nrow(race_1720))
+
+race_total <- rbind(race_1013, race_1416, race_1720)
+```
+
+# Calculating the 2010-2020 expected proportions based on LM results
+```{r}
+year_in_10 <- mean(c(2010, 2013))
+year_in_14 <- mean(c(2014, 2016))
+year_in_17 <- mean(c(2017, 2020))
+
+year_exp_props_10 <- rep(0, length(cities))
+year_exp_props_14 <- rep(0, length(cities))
+year_exp_props_17 <- rep(0, length(cities))
+
+for (i in 1:length(cities)) {
+  year_exp_props_10[i] <- predict(lm_objects[[i]], newdata = data.frame(Year = year_in_10))
+  year_exp_props_14[i] <- predict(lm_objects[[i]], newdata = data.frame(Year = year_in_14))
+  year_exp_props_17[i] <- predict(lm_objects[[i]], newdata = data.frame(Year = year_in_17))
+}
+
+names(year_exp_props_10) = names(year_exp_props_14) = names(year_exp_props_17) =  cities
+
+```
+## Getting Proportion Deltas
+```{r}
+AA_sub_gpc <- race_total[race_total$cRace == 'AA', ]
+
+# observed - expected
+AA_sub_gpc$prop_delt <- rep(0, nrow(AA_sub_gpc))
+
+## subset the AA_sub_gpc further by only looking at the census represented cities
+AA_sub_gpc <- AA_sub_gpc[AA_sub_gpc$cLocationCity %in% cities, ]
+
+# Loop through rows of AA_sub_gpc
+for (i in 1:nrow(AA_sub_gpc)) {
+  # Match the city from AA_sub_gpc with the city of the expected prop vector
+  AA_sub_gpc$prop_delt[i] <- AA_sub_gpc$prop[i] - year_exp_props[names(year_exp_props_14) == AA_sub_gpc$cLocationCity[i]]
+}
+```
+
+## Characterizing Variability
+
+### Barplots
+```{r}
+# opening pdf
+pdf('30ab_GPC_Variation_1020.pdf')
+
+GPC_mean1013 <- mean(AA_sub_gpc$prop_delt[AA_sub_gpc$yeargrp == '2010-2013'])
+GPC_sd1013 <- sd(AA_sub_gpc$prop_delt[AA_sub_gpc$yeargrp == '2010-2013'])
+
+GPC_mean1416 <- mean(AA_sub_gpc$prop_delt[AA_sub_gpc$yeargrp == '2014-2016'])
+GPC_sd1416 <- sd(AA_sub_gpc$prop_delt[AA_sub_gpc$yeargrp == '2014-2016'])
+
+GPC_mean1720 <- mean(AA_sub_gpc$prop_delt[AA_sub_gpc$yeargrp == '2017-2020'])
+GPC_sd1720 <- sd(AA_sub_gpc$prop_delt[AA_sub_gpc$yeargrp == '2017-2020'])
+
+prop_delts_gpc <- data.frame(means = c(GPC_mean1013, GPC_mean1416, GPC_mean1720), 
+                              st_devs = c(GPC_sd1013, GPC_sd1416, GPC_sd1720), 
+                              yeargrp = c('2010-2013', '2014-2016', '2017-2020'))
+
+bar_plot <- ggplot(data = prop_delts_gpc, aes(x = yeargrp, y = means, fill = yeargrp)) +
+  geom_bar(stat = "identity", position='dodge') +
+  geom_errorbar(aes(ymin=means-st_devs, ymax=means+st_devs), width=.2,
+                 position=position_dodge(.9)) + 
+  labs(x = 'Year Group', y = 'Mean Proportion Deltas') +
+  ggtitle('2010-2020: GPC Mean Proportion Deltas with Standard Deviations')
+
+bar_plot + geom_point(data = AA_sub_gpc, aes(x = yeargrp, y = prop_delt))
+```
+
+### Beeswarm + boxplot
+```{r}
+beeswarm.plot <- ggplot(data = AA_sub_gpc, aes(x = yeargrp, y = prop_delt, color = yeargrp)) +
+  geom_beeswarm(cex = 3, size = 1.75) + 
+  scale_color_brewer(palette = "Set1") +
+  labs(x = 'Year Group', y = 'Proportion Deltas') +
+  ggtitle('2010-2020: GPC Proportion Deltas with Boxplot Overlay') 
+
+beeswarm.plot + geom_boxplot(data = AA_sub_gpc, aes(x = yeargrp, y = prop_delt), alpha = 0.25) 
+```
+
+## Observing the Shifts in Proportion Deltas Among Cities
+```{r}
+plot_Bar(AA_sub_gpc, 'prop_delt', 'Proportion Deltas', race_acr = 'AA', fill_arg = 'yeargrp', yr_range = '2010-2020') + coord_flip()
+```
+
+* Atlanta, Dayton, and New York major oversampling
+* New sampling from Augusta
+* Higher oversampling of AA in Los Angeles and San Diego
+* Dallas consistent oversampling
+* Shift to oversampling for Chicago
+
+## Exploring possible reason behind shifts/major oversampling: City Proportions of AA
+```{r}
+# consider:
+# if fold change > = 2, consider this heightened oversampling
+# if 0 in 2010-2013 --> new recruitment
+# if negative in 2010-2013 but positive after --> shifted oversampling
+
+oversampled_cities <- c('Stonybrook',
+                        'New York',
+                        'Dayton',
+                        'Chicago',
+                        'Augusta',
+                        'Atlanta'
+                        )
+other_cities <- unlist(setdiff(cities, oversampled_cities))
+
+# Interpolating the 2015 census for AA
+year_15 <- 2015
+year_exp_props_15 <- rep(0, length(cities))
+for (i in 1:length(cities)) {
+  year_exp_props_15[i] <- predict(lm_objects[[i]], newdata = data.frame(Year = year_15))
+}
+
+names(year_exp_props_15) <- cities
+
+oversam <- data.frame(City = oversampled_cities, 
+                      AA_proportion = year_exp_props_15[oversampled_cities],
+                      Trend = rep('Shifted Oversample', length(oversampled_cities)))
+                      
+undersam <- data.frame(City = other_cities, 
+                      AA_proportion = year_exp_props_15[other_cities],
+                      Trend = rep('Undersampling/No striking shift', length(other_cities)))
+
+all_cities <- rbind(oversam, undersam)
+
+ggplot(data = all_cities, aes(x = City, y = AA_proportion, fill = Trend)) +
+  geom_bar(stat = "identity", position='dodge') + 
+  ggtitle('Interpolated 2015 Census Proportion for AA') + coord_flip()
+```
+
+Trends:
+* Preference to oversample in Cities with higher (>20%) proportion of AA
+
+
+## Exploring Additonal Reason: City AA population (n)
+```{r}
+dat_2010_AA <- as.data.frame(dat_2010_races['AA'])
+rownames(dat_2010_AA) <- rownames(dat_2010_races)
+dat_2010_AA$Year <- rep(2010, nrow(dat_2010_AA))
+
+# Making a city column
+dat_2010_AA$City <- rownames(dat_2010_AA)
+dat_2010_AA <- dat_2010_AA[, c(ncol(dat_2010_AA), 1:(ncol(dat_2010_AA) - 1))]
+rownames(dat_2010_AA) <- NULL
+
+# reformatting the City vector
+dat_2010_AA$City <- lapply(dat_2010_AA$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+dat_2020_AA <- as.data.frame(dat_2020_races['AA'])
+rownames(dat_2020_AA) <- rownames(dat_2020_races)
+dat_2020_AA$Year <- rep(2020, nrow(dat_2020_AA))
+
+# Making a city column
+dat_2020_AA$City <- rownames(dat_2020_AA)
+dat_2020_AA <- dat_2020_AA[, c(ncol(dat_2020_AA), 1:(ncol(dat_2020_AA) - 1))]
+rownames(dat_2020_AA) <- NULL
+
+# reformatting the City vector
+dat_2020_AA$City <- lapply(dat_2020_AA$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+AA_dat <- rbind(dat_2010_AA, dat_2020_AA)
+
+
+lm_objects_counts <- vector(mode = "list", length = length(cities))
+
+for (i in 1:length(cities)) {
+  lm_obj <- lm(AA ~ Year, data = AA_dat[unlist(AA_dat$City) == cities[i], ])
+  lm_objects_counts[[i]] <- lm_obj
+}
+
+# Generating predicted counts
+year_exp_n_15<- rep(0, length(cities))
+for (i in 1:length(year_exp_n_15)) {
+  year_exp_n_15[i] <- predict(lm_objects_counts[[i]], newdata = data.frame(Year = year_15))
+}
+
+names(year_exp_n_15) <- cities
+year_exp_n_15
+
+oversam$AA_n <- year_exp_n_15[oversampled_cities]
+undersam$AA_n <- year_exp_n_15[other_cities]
+
+all_cities <- rbind(oversam, undersam)
+
+ggplot(data = all_cities, aes(x = City, y = AA_n, fill = Trend)) +
+  geom_bar(stat = "identity", position='dodge') + 
+  labs(x = 'City', y = 'AA Population Size') + 
+  ggtitle('Interpolated 2015 Census Population Size for AA') + coord_flip()
+
+dev.off()
+```
+
+Trend:
+* Tend to oversample from cities with high AA population size
+

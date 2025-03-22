@@ -1,0 +1,200 @@
+---
+title: "Diversity Scores for HC and SZSAFD"
+author: "Daniel Zoleikhaeian"
+date: "2023-06-02"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Importing data
+```{r}
+library(plyr)
+library(dplyr)
+df_COGS2 <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_060723.csv')
+df_COGS2 <- df_COGS2[df_COGS2$cStudy == 'COGS2', ]
+nrow(df_COGS2)
+
+head(df_COGS2)
+# adding year column
+df_COGS2$cEnrollmentYear <- as.numeric(substr(df_COGS2$cEnrollmentDateYear, 1,4))
+head(df_COGS2)
+
+unique(df_COGS2$cRace)
+
+# re-encoding OT/UNK/MR into one group
+df_COGS2$cRace2 <- df_COGS2$cRace
+df_COGS2$cRace2[df_COGS2$cRace2 %in% c('OT', 'OT/UNK', 'MR')] <- 'OT/MR'
+nrow(df_COGS2)
+
+# omitting NA
+#df_COGS2 <- na.omit(df_COGS2)
+nrow(df_COGS2)
+
+df_COGS2_inc_cases <- df_COGS2[!complete.cases(df_COGS2),]
+View(df_COGS2_inc_cases)
+
+# email Joyce about COGS2 dates - DONE 6/7/23
+
+```
+
+### Helper function: Diversity Index
+```{r}
+mult_ent <- function(race_prop_vec) {
+  
+  tot <- 0
+  
+  for (i in 1:length(race_prop_vec)) {
+    if (race_prop_vec[i] != 0) {
+      tot <- tot + race_prop_vec[i] * log(1/race_prop_vec[i])
+    }
+  }
+  return(tot)
+}
+```
+
+## Generating Diversity Scores (Cumulative) by Year and City
+```{r}
+diagnoses <- c('CS', 'SZSAFD')
+cities <- unique(df_COGS2$cLocationCity)
+years <- unique(df_COGS2$cEnrollmentYear)
+
+n <- 2 * length(cities) * length(years)
+n2 <- 2 * length(cities)
+
+# empty dataframe to hold data
+df_di <- data.frame(City = rep('',n),
+                    Year = rep(0,n),
+                    Diagnosis = rep('',n),
+                    mult_ent = rep(0,n)
+                    )
+
+df_di2 <- data.frame(City = rep('',n2),
+                    Diagnosis = rep('',n2),
+                    mult_ent = rep(0,n2)
+                    )
+
+# tertiary level: diagnosis
+# outer level: year
+# inner level: city
+n_track <- 1
+n_track2 <- 1
+for (d in 1:length(diagnoses)) {
+  for (i in 1:length(years)) {
+    for (j in 1:length(cities)) {
+      df_sub <- df_COGS2[df_COGS2$cDiagnosis3 == diagnoses[d] & df_COGS2$cLocationCity == cities[j] & df_COGS2$cEnrollmentYear <= years[i],]
+      
+      # if the dataframe is empty, skip this iteration
+      if (nrow(df_sub) == 0) {
+        df_di[n_track,1] <- cities[j]
+        df_di[n_track,3] <- diagnoses[d]
+        df_di_[n_track, 2] <- years[i]
+        df_di[n_track,4] <- -99 # the code for no data
+        n_track <- n_track + 1
+        next
+      }
+      
+      # first subset out the hispanics, then count up and make proportions out of the other races
+      his_prop <- sum(df_sub$cHispanicorLatino == 'Yes')/nrow(df_sub)
+      race_ct <- plyr::count(df_sub[df_sub$cHispanicorLatino == 'No',], 'cRace2')
+      race_ct$prop <- race_ct$freq/nrow(df_sub)
+      
+      prop_vec <- c(his_prop, race_ct$prop)
+      m_ent <- mult_ent(prop_vec)
+      
+      df_di[n_track,1] <- cities[j]
+      df_di[n_track,2] <- years[i]
+      df_di[n_track,3] <- diagnoses[d]
+      df_di[n_track,4] <- m_ent
+      n_track <- n_track+1
+    }
+  }
+}
+
+```
+
+## Plotting Diversity Scores
+```{r}
+library(ggplot2)
+
+df_di_cs <- df_di[df_di$Diagnosis == 'CS',]
+df_di_szsafd <- df_di[df_di$Diagnosis == 'SZSAFD',]
+
+ggplot(data=df_di, aes(x=Year, y=mult_ent, group=City)) +
+  geom_line(data = df_di[df_di$Diagnosis == 'CS',], aes(color = City), linetype='solid', size = 1.1) +
+  geom_line(data = df_di[df_di$Diagnosis == 'SZSAFD',], linetype='dashed', aes(color = City), size = 1.1) +
+  geom_point(aes(color = City)) +
+  ggtitle('Cumulative Diversity Indices\nover Time for HC (solid) and SZSAFD (dashed)')
+
+# szsafd <- ggplot(data=df_di_szsafd, aes(x=Year, y=mult_ent, group=City)) +
+#   geom_line(linetype='dashed', aes(color=City)) +
+#   ggtitle('Diversity Indices over Time for SZSAFD')
+
+
+```
+
+## Longitudinal Data Analysis - Framing the question
+* Goal: predict diversity index in sample based on:
+1) City diversity index - covariate
+2) City population (estimate from ACS) - covariate
+3) Cumulative Sample Size from that city - covariate
+4) Diagnosis designation (variable of interest)
+
+Resource: 
+
+Lalonde, T.L. (2015). Modeling Time-Dependent Covariates in Longitudinal Data Analyses. In: Chen, DG., Wilson, J. (eds) Innovative Statistical Methods for Public Health Data. ICSA Book Series in Statistics. Springer, Cham. https://doi.org/10.1007/978-3-319-18536-1_4
+
+From the graph:
+* Can test a diagnosis x time effect within each city 
+- See if the responses are parallel or not
+* Can see how diversity index profiles vary based on city characteristics
+
+## Testing Diagnosis x time effect
+NOTE: no time-dependent covariates involved in model
+```{r}
+library(nlme)
+library(lme4)
+
+df_di$Post10 <- df_di$Year-2010
+max_di <- log(8)
+df_di$mult_ent_s <- df_di$mult_ent / max_di * 100
+
+# random intercept and slopes model fails to converge
+# random intercept model instead
+ri_mod <- lme(fixed = mult_ent_s ~ Diagnosis * factor(Post10), random = ~ 1|City,
+                  method = "REML", na.action = na.omit, data=df_di)
+summary(ri_mod)
+
+ri_mod_ct <- lme(fixed = mult_ent_s ~ Diagnosis * Post10, random = ~ 1|City,
+                  method = "REML", na.action = na.omit, data=df_di)
+summary(ri_mod_ct)
+
+ri_mod_ml <- lme(fixed = mult_ent_s ~ Diagnosis * factor(Post10), random = ~ 1|City,
+                  method = "ML", na.action = na.omit, data=df_di)
+
+ri_mod_ct_ml <- lme(fixed = mult_ent_s ~ Diagnosis * Post10, random = ~ 1|City,
+                  method = "ML", na.action = na.omit, data=df_di)
+
+anova(ri_mod_ct_ml, ri_mod_ml)
+
+# no evidence for response profile fitting significantly better than continuous time
+summary(ri_mod_ct)
+```
+
+Preliminary conclusion:
+
+After accounting for city-level variation at baseline, diversity index increased by 2.30351 percentage points per year (p = 0.0303). Relative to healthy controls, the SZSAFD condition experienced a slightly attenuated increase (-0.81081) in diversity index, though this attenuation is not statistically significant (p = 0.5798).
+
+Moving forward:
+- Try to use ethnicity and gender --> by-city differences
+-- Just only use races for diversity index, then do follow-up analyses on ethnicity and gender
+-- do the race only, then separate analyses on eth and gender
+-- then see if you can combine race/eth/gender
+-- find out about the 200 missing people
+
+Thoughts for regression:
+* What if you used percentage of max diversity score?

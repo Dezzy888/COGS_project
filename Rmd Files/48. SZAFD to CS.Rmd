@@ -1,0 +1,363 @@
+---
+title: "47. Testing Threshold and Scale Factor"
+author: "Daniel Zoleikhaeian"
+date: "2023-07-14"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Setup
+
+## Importing COGS2 data
+```{r}
+library(grid)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+
+df_COGS2 <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_060723.csv')
+df_COGS2 <- df_COGS2[df_COGS2$cStudy == 'COGS2', ]
+nrow(df_COGS2)
+
+head(df_COGS2)
+# adding year column
+df_COGS2$cEnrollmentYear <- as.numeric(substr(df_COGS2$cEnrollmentDateYear, 1,4))
+head(df_COGS2)
+
+unique(df_COGS2$cRace)
+
+# re-encoding OT/UNK/MR into one group
+df_COGS2$cRace2 <- df_COGS2$cRace
+df_COGS2$cRace2[df_COGS2$cRace2 %in% c('OT', 'OT/UNK', 'MR', 'UNK')] <- 'OT/MR'
+nrow(df_COGS2)
+
+# removing San Diego observations
+no_sd <- df_COGS2[df_COGS2$cLocationCity != 'San Diego', ]
+```
+
+### Helper function: Transforming by dictionary
+```{r}
+dict_transform <- function(keys, values, vec) {
+  for (i in 1:length(keys)) {
+    vec[vec == keys[i]] <- values[i]
+  }
+  return (vec)
+}
+```
+
+### Group code manipulations
+```{r}
+group_codes_df <- data.frame(Race2 = rep(c('AA', 'AE', 'AS','CA','NH','OT/MR'), rep(4,6)),
+                             Hispan2 = rep(rep(c('No','Yes'), c(2,2)), 6),
+                             Gender = rep(c('F','M'), 12),
+                             group_code = 1:24)
+
+group_code_gen <- function(df, handbook) {
+  df$group_code <- rep(0,nrow(df))
+  for (n in 1:nrow(df)) {
+    for (i in 1:nrow(handbook)) {
+      if (df[n,1] == handbook[i,1] &&
+          df[n,2] == handbook[i,2] &&
+          df[n,3] == handbook[i,3]) {
+        df$group_code[n] <- handbook$group_code[i]
+        break
+      } else {
+        next
+      }
+    }
+  }
+  return (df)
+}
+
+group_code_inverse <- function(df, handbook) {
+  df <- cbind(handbook[handbook$group_code %in% df$group_code, 1:3], df)
+  return(df)
+}
+```
+
+## Helper function for coercing lists into dataframes
+```{r}
+quickdf <- function(l) {
+  class(l) <- "data.frame"
+  attr(l, "row.names") <- .set_row_names(length(l[[1]]))
+  l
+}
+
+l1 <- list(nums = c(1,2,3), lets = c('a', 'b', 'c'))
+class(l1) <- "data.frame"
+attr(l1, "row.names") <- .set_row_names(length(l1[[1]]))
+l1
+```
+
+## New pooled target dataframe
+* This is just the oberved proportions seen in COGS controls 
+```{r}
+pool_cs <- plyr::count(no_sd[no_sd$cDiagnosis4 == 'CS', ], c('cRace2', 'cHispanicorLatino', 'cGender'))
+pool_cs$prop <- pool_cs$freq / sum(pool_cs$freq)
+pool_cs
+
+pool_cs <- group_code_gen(pool_cs, group_codes_df)
+pool_cs
+```
+
+## Sampling algorithm
+
+Inputs
+- the original count from plyr::count(original_cogs_dataframe)
+- the pool count dataframe
+- scale factor (what percent of original sample you want to resample)
+- threshold to match the acs proportions +/- what you are looking for
+
+```{r}
+
+sampling_algorithm <- function(cogs_og, pool_df, scale_factor, thresh, n_iter, do_print = FALSE, suppress_df = TRUE) {
+  # making a copy of the original cogs data
+  # this copy will be updated in each pass
+  cogs_counts_updated <- cogs_og[, c('group_code', 'freq', 'props')]
+  cogs_counts_updated$freq_og <- cogs_og$freq
+  cogs_counts_updated$props_og <- cogs_og$props
+  cogs_counts_updated$props_target <- pool_df$prop
+  cogs_counts_updated <- cogs_counts_updated[, c('group_code', 'freq', 'freq_og','props_og','props_target','props')]
+
+  n_steps <- 0
+  size_arg <- sum(cogs_og$freq) * scale_factor
+  
+  # start loop here
+  
+  number_rejected <- data.frame(group_code = cogs_og$group_code,
+                                  n = rep(0, nrow(cogs_og)))          
+  
+  for (N in 1:n_iter) {
+    
+    # check stop condition: if all the new proportions are within 0.05 of the acs proportions, then stop
+    if (all(cogs_counts_updated$props >= (pool_df$prop - thresh)&
+    cogs_counts_updated$props <= pool_df$prop + thresh)) {
+   
+      if (do_print) {cat('Number of steps:', n_steps, '\n')}
+      break
+    }
+  
+    
+    
+    # Methodology: sample from the group_codes based on the proportion found in the original cogs_counts
+
+    sam <- sample(x = cogs_og$group_code, size = size_arg, prob = cogs_og$props, replace = TRUE)
+    sam_counts <- plyr::count(sam)
+    
+    # for each group code in cogs_counts
+    for (i in 1:nrow(cogs_counts_updated)) {
+      
+      # first check if the group was in the sample
+      if (any(cogs_counts_updated$group[i] %in% sam_counts$x)) {
+        # check whether the category is currently overrepresented
+        # if it is, then don't touch it
+        if (cogs_counts_updated$props[i] > pool_df$prop[i]) {
+          # update the number rejected
+          # but don't update the counts
+          number_rejected$n[number_rejected$group_code == cogs_counts_updated$group_code[i]] <- number_rejected$n[number_rejected$group_code == cogs_counts_updated$group_code[i]] + sam_counts$freq[sam_counts$x == cogs_counts_updated$group_code[i]]
+          
+        } else {
+          # the add the people to the sample
+          cogs_counts_updated$freq[i] <- cogs_counts_updated$freq[i] + sam_counts$freq[sam_counts$x == cogs_counts_updated$group_code[i]] 
+        }
+      }
+    }
+    
+    # update the proportions
+    cogs_counts_updated$props <- cogs_counts_updated$freq / sum(cogs_counts_updated$freq)
+    
+    # update the number of iterations
+    n_steps <- n_steps + 1
+  }
+  
+  if (N == n_iter && do_print) {
+    cat('Did not converge in', n_steps, 'steps.\n')
+  }
+  
+  if (suppress_df) {
+    return(n_steps) 
+  } else {
+    return (list(cogs_counts_updated, number_rejected, n_steps))
+  }
+}
+
+# cogs_og = cogs_counts_sz; pool_prop = pool_cs_complete$prop; scale_factor=0.5; thresh=0.025; n_iter=1000; track_rej = TRUE; suppress_df= FALSE; do_print=FALSE;
+
+# to make run faster, subset cogs_og by 'group_code', 'freq', and 'props'
+sampling_algorithm2 <- function(cogs_og, pool_prop, scale_factor, thresh, n_iter, do_print = FALSE, suppress_df = TRUE, track_rej = FALSE) {
+  # making a copy of the original cogs data
+  # this copy will be updated in each pass
+  
+  lnew_data <- list(freq = cogs_og$freq, group_code = cogs_og$group_code,
+                 props = cogs_og$props)
+  
+                                   
+
+  n_steps <- 0
+  size_arg <- sum(cogs_og$freq) * scale_factor
+  
+  # start loop here
+  
+  if (track_rej) {
+     number_rejected <- data.frame(group_code = cogs_og$group_code,
+                                  n = rep(0, nrow(cogs_og)))        
+  }
+   
+  
+  for (N in 1:n_iter) {
+    
+    # check stop condition: if all the new proportions are within 0.05 of the acs proportions, then stop
+    if (all(lnew_data$props >= (pool_prop - thresh)&
+    lnew_data$props <= pool_prop + thresh)) {
+   
+      if (do_print) {cat('Number of steps:', n_steps, '\n')}
+      break
+    }
+  
+    
+    
+    # Methodology: sample from the group_codes based on the proportion found in the original cogs_counts
+    sam <- sample(x = cogs_og$group_code, size = size_arg, prob = cogs_og$props, replace = TRUE)
+    sam_counts <- plyr::count(sam)
+    
+    # for each group code in cogs_counts
+    for (i in 1:nrow(cogs_og)) {
+      
+      # first check if the group was in the sample
+      if (any(cogs_og$group[i] %in% sam_counts$x)) {
+        # check whether the category is currently overrepresented
+        # if it is, then don't touch it
+        if (lnew_data$props[i] > pool_prop[i]) {
+          # update the number rejected
+          # but don't update the counts
+          if (track_rej) {
+            number_rejected$n[number_rejected$group_code == cogs_og$group_code[i]] <- number_rejected$n[number_rejected$group_code == cogs_og$group_code[i]] + sam_counts$freq[sam_counts$x == cogs_og$group_code[i]]
+          }
+          
+          
+        } else {
+          # the add the people to the sample
+          lnew_data$freq[i] <- lnew_data$freq[i] + sam_counts$freq[sam_counts$x == lnew_data$group_code[i]] 
+        }
+      }
+    }
+    
+    # update the proportions
+    lnew_data$props <- lnew_data$freq / sum(lnew_data$freq)
+    
+    # update the number of iterations
+    n_steps <- n_steps + 1
+  }
+  
+  if (N == n_iter && do_print) {
+    cat('Did not converge in', n_steps, 'steps.\n')
+  }
+  
+  if (suppress_df) {
+    return(n_steps) 
+  } else {
+    lnew_data <- quickdf(lnew_data)
+    out <- cbind(lnew_data, data.frame(freq_og = cogs_og$freq,
+                          props_og = cogs_og$props,
+                          props_target = pool_prop))
+    return (list(out, number_rejected, n_steps))
+  }
+}
+```
+
+## Getting Cogs Counts
+```{r}
+no_sd_sz <- no_sd[no_sd$cDiagnosis4 == 'SZSAFD',]
+cogs_counts_sz <- plyr::count(no_sd_sz, c('cRace2', 'cHispanicorLatino', 'cGender'))
+cogs_counts_sz$props <- cogs_counts_sz$freq / sum(cogs_counts_sz$freq)
+cogs_counts_sz <- group_code_gen(cogs_counts_sz, group_codes_df)
+cogs_counts_sz
+```
+
+## Updating the cs pool to exclude unicorns
+```{r}
+pool_cs <- pool_cs[pool_cs$group_code %in% intersect(pool_cs$group_code, cogs_counts_sz$group_code),]
+nrow(pool_cs)
+
+# adding the missing group codes
+# NOTE: there are some individuals that are in SZ that are not in CS
+miss_codes <- setdiff(cogs_counts_sz$group_code, pool_cs$group_code)
+df_miss <- data.frame(group_code = miss_codes,
+                      prop = rep(0, length(miss_codes)))
+pool_cs_complete <- rbind(pool_cs[, c('group_code', 'prop')], df_miss)
+pool_cs_complete <- pool_cs_complete[order(pool_cs_complete$group_code),]
+rownames(pool_cs_complete) <- NULL
+pool_cs_complete
+
+# checking that the rows match up
+all(pool_cs_complete$group_code == cogs_counts_sz$group_code)
+```
+
+## Testing the new sampling function
+```{r}
+nrow(pool_cs_complete)
+nrow(cogs_counts_sz)
+s3 <- Sys.time()
+out2 <- sampling_algorithm2(cogs_counts_sz, pool_cs_complete$prop, 0.5, 0.025, 1000, track_rej = FALSE, suppress_df= TRUE)
+
+s4 <- Sys.time()
+
+s4 - s3 # 
+
+out2 <- sampling_algorithm2(cogs_og = cogs_counts_sz, pool_prop = pool_cs_complete$prop, scale_factor=0.5, thresh=0.025, n_iter=1000, track_rej = TRUE, suppress_df= FALSE)
+
+
+out2[[1]]
+```
+
+
+# Steps to convergence from SZSAFD to CS
+* 50% of original SZ sample size
+* 0.025 threshold
+```{r}
+n_sim <- 1000
+
+steps_storage <- rep(0, n_sim)
+start_time <- Sys.time()
+for (i in 1:n_sim) {
+  steps_storage[i] <- sampling_algorithm2(cogs_counts_sz, pool_cs_complete$prop, 0.5, 0.025, 1000, track_rej = FALSE, suppress_df= TRUE)
+}
+
+end_time <- Sys.time()
+end_time - start_time
+rng <- range(steps_storage)
+hist(steps_storage, main = 'SZSAFD to CS: Number of Resamples\nuntil Convergence', xlab = "Number of Resamples")
+hist(steps_storage, freq = FALSE, xlim = c(0, max(steps_storage)), breaks = 0:rng[2])
+steps_storage <- sort(steps_storage)
+conf_int <- c(steps_storage[0.025*n_sim], steps_storage[0.975*n_sim])
+med_step <- median(steps_storage)
+library(kableExtra)
+library(tableHTML)
+perc_names <- c("2.5th",
+                "1st Quartile",
+                "Median",
+                "3rd Quartile",
+                "97.5th"
+                )
+perc_res <- quantile(steps_storage, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+
+sum_stats <- data.frame(Percentile = names(perc_res),
+                        Value = unname(perc_res))
+sum_stats
+
+tbl <- kbl(sum_stats, caption = "Number of Resamples until Convergence for Control Subjects", table.attr = "style='width:50%;'" ) %>%
+kable_styling(bootstrap_options = "striped", full_width = T, position = "center")
+tbl
+
+mean(steps_storage)
+sd(steps_storage)
+
+mean(steps_storage) + c(-2,2) * sd(steps_storage)
+```
+

@@ -1,0 +1,890 @@
+---
+title: "Dif_idx_across_size"
+author: "Daniel Zoleikhaeian"
+date: "2023-02-24"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+```
+
+## Working directory
+```{r}
+setwd("C:/Users/danie/Documents/Joshi Lab Materials/3 Studies Dataset/Dataset Merge/012623")
+```
+
+## Loading Datasets and creating average dataset
+```{r}
+total_df <- read.csv('bgc_merge_cDiag123_new.csv')
+
+# Changing La Jolla to San Diego
+total_df$cLocationCity[total_df$cLocationCity == 'La Jolla'] <- 'San Diego'
+# Changing Brooklyn to New York
+total_df$cLocationCity[total_df$cLocationCity == 'Brooklyn'] <- 'New York'
+
+# Removing USC/MASS
+total_df <- total_df[total_df$cLocationCity != 'USC/MASS', ]
+
+df_check_2010 <- read_xlsx('reproj_30_2010.xlsx')
+df_check_2020 <- read_xlsx('reproj_30_2020.xlsx')
+
+dem_2010 <- df_check_2010[,-1]
+dem_2020 <- df_check_2020[,-1]
+
+df_avg <- df_check_2010
+df_avg[,] <- NA
+df_avg$City <- NULL
+
+for (i in 1:ncol(dem_2010)) {
+  df_avg[,i] <- rowMeans(cbind(dem_2010[,i], dem_2020[,i]))
+  
+}
+
+df_avg <- cbind(df_check_2010$City, df_avg)
+colnames(df_avg)[1] <- 'City'
+
+
+# Reformatting cities
+for (i in 1:length(df_avg$City)) {
+  df_avg$City[i] <- substr(df_avg$City[i], 1, unlist(gregexpr(',', df_avg$City[i]))[1] - 1)
+}
+
+df_avg$City[df_avg$City == 'Stonybrook'] <- 'Stony Brook'
+
+# Standardizing race acronyms
+colnames(df_avg)[colnames(df_avg) == 'NA'] <- 'AE'
+colnames(df_avg)[colnames(df_avg) == 'NH'] <- 'Not Hispanic'
+colnames(df_avg)[colnames(df_avg) == 'PI'] <- 'NH'
+
+#View(df_avg)
+
+# Re-run with only GPC and COGS 
+
+# Looking only at SZSAFD
+szsafd <- total_df[total_df$cDiagnosis4 == 'SZSAFD', ]
+cs <- total_df[total_df$cDiagnosis4 == 'CS', ]
+bad12 <- total_df[total_df$cDiagnosis4 == 'BAD12',]
+mdd <- total_df[total_df$cDiagnosis4 == 'MDD', ]
+
+
+# Looking at city intersection between dataset and 
+test_cities <- intersect(df_avg$City, szsafd$cLocationCity)
+test_cities
+```
+
+## Dependencies: Analysis methodology - simulation for later use
+```{r}
+# Modified input: df_null is now a vector
+
+msim <- function(df_obs, df_null, races) {
+  null_races <- colnames(df_null)[2:8]
+  null_dist <- rep(null_races, round(df_null[1,2:8],0)) # edited this line
+  results <- matrix(0,6,1000)
+
+  for (i in 1:1000) {
+    sam <- sample(null_dist, nrow(df_obs), replace = F)
+    race_sam <- as.data.frame(plyr::count(sam))
+    
+    not_represented <- c()
+  
+    for (race in races) {
+      if (!is.element(race, race_sam$x))
+        not_represented <- c(not_represented, race)
+      else
+        next
+    }
+    
+    for (race in not_represented) {
+      race_sam <- rbind(race_sam, data.frame(x = race, freq = 0))
+    }
+    
+    race_sam <- race_sam[order(race_sam$x),]
+    rownames(race_sam) <- race_sam$x
+    race_sam$x <- NULL
+    
+    results[,i] <- race_sam$freq
+    results[,i] <- results[,i] / sum(results[,i])
+  }
+
+  sigs <- rep(NA, 6)
+  # two-tailed test with p-value = 0.05/6 = 0.008
+  # generate a 99.2% CI
+  # see if the observed value lies outside of this interval
+  lower_bounds <- c()
+  upper_bounds <- c()
+  
+  for (i in 1:nrow(df_obs)) {
+    row_res <- sort(results[i, ])
+    lower_bound <- row_res[4]
+    lower_bounds <- c(lower_bounds, lower_bound)
+    upper_bound <- row_res[996]
+    upper_bounds <- c(upper_bounds, upper_bound)
+    
+    
+    if (df_obs$prop[i] > upper_bound || df_obs$prop[i] < lower_bound) {
+      sigs[i] <- T
+    }
+    else {
+      sigs[i] <- F
+    }
+  }
+  
+  df_obs$lower <- lower_bounds
+  df_obs$upper <- upper_bounds
+  df_obs$Significance <- sigs
+  return(df_obs)
+}
+
+```
+
+## Starting analysis: prop dif across city for SZSAFD_gpc
+
+```{r}
+szsafd_gpc <- szsafd[szsafd$cStudy == 'GPC', ]
+test_cities <- intersect(df_avg$City, szsafd_gpc$cLocationCity)
+
+null_race_cts <- df_avg[, 1:8]
+null_race_props <- null_race_cts
+
+for (i in 1:nrow(null_race_cts)) {
+  city_tot <- sum(null_race_cts[i, 2:8])
+  null_race_props[i, 2:8] <- null_race_cts[i,2:8] / city_tot
+}
+
+#null_race_props <- as.data.frame(apply(null_race_cts[,-1], MARGIN = 2, function(x) {x / sum(x)}))
+
+
+View(null_race_props)
+df_city <- data.frame(City = null_race_cts$City)
+
+null_race_props <- null_race_props[null_race_props$City %in% test_cities,]
+null_race_props <- null_race_props[order(null_race_props$City), ]
+
+
+brc <- szsafd_gpc %>%  
+  dplyr::group_by(cRace, cLocationCity) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+brc <- brc[brc$cLocationCity %in% test_cities, ]
+ 
+
+brc <- brc[order(brc$cLocationCity), ]
+brc$Prop <- NA
+
+for (i in 1:length(test_cities)) {
+    brc$Prop[brc$cLocationCity == test_cities[i]] <- brc$total_count[brc$cLocationCity == test_cities[i]] / sum(brc$total_count[brc$cLocationCity == test_cities[i]])
+}
+
+# View(brc)
+# View(null_race_props)
+
+
+```
+
+### AA SZSAFD GPC (tester code)
+```{r}
+AA_row_null <- as.data.frame(null_race_props[,c('City','AA')])
+AA_obs <- brc[brc$cRace == 'AA', ]
+
+View(AA_row_null)
+
+# Verifying positional matching among cities
+(levels(factor(AA_obs$cLocationCity)) == AA_row_null$City)
+
+#View(AA_obs)
+AA_row_obs <- AA_obs$Prop
+
+propdif_AA <- AA_row_obs - AA_row_null$AA
+
+city_cts <- plyr::count(szsafd$cLocationCity)
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == AA_row_null$City
+
+plot(log(ct_to_plot$freq), propdif_AA, main = 'SZSAFD: Proportion Difference by Sample Size for AA', xlab = 'Log(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+AA_lr <- lm(propdif_AA ~ log(ct_to_plot$freq))
+summary(AA_lr)
+abline(AA_lr, col = 'red', lwd = 2)
+
+mtext(paste('gpc Adj R-squared=', round(summary(AA_lr)$adj.r.squared,3)), side = 3)
+
+plot(AA_lr, 1)
+plot(AA_lr, 4)
+
+## Alternate analysis: use the city population of AA
+View(null_race_cts)
+
+null_race_cts <- null_race_cts[null_race_cts$City %in% test_cities, ]
+AA_null <- null_race_cts$AA
+
+plot(log(AA_null), propdif_AA, main = 'SZSAFD: Proportion Difference by AA City Population for AA', xlab = 'log(AA population)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+AA_total_pop_lr <- lm(propdif_AA ~ log(AA_null))
+summary(AA_total_pop_lr)
+abline(AA_total_pop_lr, col = 'red')
+mtext(paste('gpc Adj R-squared=', round(summary(AA_total_pop_lr)$adj.r.squared,3)), side = 3)
+
+## Alternate analysis: use total city population instead
+null_race_sums <- as.data.frame(apply(null_race_cts[,-1], 1, sum))
+colnames(null_race_sums) <- 'Total City Population'
+View(null_race_sums)
+
+Total_pop_lr_AA <- lm(propdif_AA ~ log(null_race_sums[,1]))
+summary(Total_pop_lr_AA)
+
+plot(log(null_race_sums[,1]), propdif_AA, main = 'SZSAFD: Proportion Difference by Total City Population for AA', xlab = 'Total City Population', ylab = 'Proportion Difference (Observed - Census Average)' )
+text(log(null_race_sums[,1]), propdif_AA, 1:nrow(null_race_sums), pos=1)
+
+abline(Total_pop_lr_AA, col = 'red')
+mtext(paste('gpc Adj R-squared=', round(summary(Total_pop_lr_AA)$adj.r.squared,3)), side = 3)
+
+```
+
+## Function for getting plot and lm data
+```{r}
+
+race_cities_plot_data <- function(null_df, obs_df, race_acr) {
+  
+  obs_cities <- obs_df$cLocationCity[obs_df$cRace == race_acr]
+  
+  test_cities <- intersect(null_df$City, obs_cities)
+  
+  null_race_cts <- null_df[, 1:8]
+  null_race_props <- null_race_cts
+
+  #null_race_props <- as.data.frame(apply(null_race_cts[,-1], MARGIN = 2, function(x) {x / sum(x)}))
+  
+  #df_city <- data.frame(City = null_race_cts$City)
+  
+  #null_race_props <- cbind(df_city, null_race_props)
+  for (i in 1:nrow(null_race_cts)) {
+  city_tot <- sum(null_race_cts[i, 2:8])
+  null_race_props[i, 2:8] <- null_race_cts[i,2:8] / city_tot
+}
+  
+  null_race_props <- null_race_props[null_race_props$City %in% test_cities,]
+  null_race_props <- null_race_props[order(null_race_props$City), ]
+  
+  brc <- obs_df %>%  
+    dplyr::group_by(cRace, cLocationCity) %>%  
+    dplyr::summarise(total_count=n(), .groups = 'drop')
+  
+  brc <- brc[brc$cLocationCity %in% test_cities, ]
+  
+  brc <- brc[order(brc$cLocationCity), ]
+  brc$Prop <- NA
+  
+  # Turning counts into proportions
+  for (i in 1:length(test_cities)) {
+    brc$Prop[brc$cLocationCity == test_cities[i]] <- brc$total_count[brc$cLocationCity == test_cities[i]] / sum(brc$total_count[brc$cLocationCity == test_cities[i]])
+  }
+  
+  null_row <- as.data.frame(null_race_props[,c('City', race_acr)])
+  obs_races <- brc[brc$cRace == race_acr, ]
+  obs_prop <- obs_races$Prop
+  
+  ## Begin output variables to send to lm() and plot()
+  propdif <- obs_prop - null_row[,2] ## response
+  city_cts <- plyr::count(obs_df$cLocationCity)
+  ct_to_plot <- city_cts$freq[city_cts$x %in% test_cities] ## predictor 1
+  
+  null_race_cts <- null_race_cts[null_race_cts$City %in% test_cities, ]
+  race_of_interest_null <- null_race_cts[, colnames(null_race_cts) == race_acr] ## predictor 2
+  
+  null_race_sums <- as.data.frame(apply(null_race_cts[,-1], 1, sum)) ## predictor 3
+  colnames(null_race_sums) <- 'Total City Population'
+  
+  output <- list(propdif, ct_to_plot, race_of_interest_null, null_race_sums[,1])
+  names(output) <- c('Prop dif', 'city sample', 'census average race count', 'census average pop total')
+  
+  return (output)
+  
+}
+
+plot_race_lm <- function(data_list, race_acr, disease, study) {
+  plot(log(data_list[[2]]), data_list[[1]], main = paste(disease, ': Proportion Difference by Sample Size for ', race_acr, sep = ''), xlab = 'Log(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+    text(log(data_list[[2]]), data_list[[1]], 1:length(data_list[[2]]), pos=4, offset = 0.25)
+
+  
+  city_sam_lr <- lm(data_list[[1]] ~ log(data_list[[2]]))
+  abline(city_sam_lr, col = 'red', lwd = 2)
+  
+
+  mtext(paste(study, 'Adj R-squared=', round(summary(city_sam_lr)$adj.r.squared,3)), side = 3)
+  plot(city_sam_lr, 1)
+  plot(city_sam_lr, 4)
+  
+  plot(log(data_list[[3]]), data_list[[1]], main = paste(disease, ': Proportion Difference by City Population for ', race_acr, sep = ''), xlab = paste('log(',race_acr,' population)', sep = ''), ylab = 'Proportion Difference (Observed - Census Average)' )
+  text(log(data_list[[3]]), data_list[[1]], 1:length(data_list[[3]]), pos=4, offset = 0.25)
+
+
+  race_total_pop_lr <- lm(data_list[[1]] ~ log(data_list[[3]]))
+  abline(race_total_pop_lr, col = 'red')
+  mtext(paste(study, 'Adj R-squared=', round(summary(race_total_pop_lr)$adj.r.squared,3)), side = 3)
+  plot(race_total_pop_lr, 1)
+  plot(race_total_pop_lr, 4)
+  
+  Total_city_pop <- lm(data_list[[1]] ~ log(data_list[[4]]))
+
+  plot(log(data_list[[4]]), data_list[[1]], main = paste(disease, ': Proportion Difference in ', race_acr, ' by Total City Population', sep = ''), xlab = 'Total City Population', ylab = 'Proportion Difference (Observed - Census Average)' )
+    text(log(data_list[[4]]), data_list[[1]], 1:length(data_list[[4]]), pos=4, offset = 0.25)
+
+  
+  abline(Total_city_pop, col = 'red')
+  mtext(paste(study, 'Adj R-squared=', round(summary(Total_city_pop)$adj.r.squared,3)), side = 3)
+  plot(Total_city_pop, 1)
+  plot(Total_city_pop, 4)
+  
+  return(list(city_sam_lr, race_total_pop_lr, Total_city_pop))
+  
+}
+
+```
+
+## Examples applying the custom functions
+```{r AA Analysis}
+szsafd_gpc <- szsafd[szsafd$cStudy == 'GPC', ]
+
+AA_out <- race_cities_plot_data(df_avg, szsafd_gpc, 'AA')
+plot_race_lm(AA_out,'AA', 'SZSAFD', 'GPC')
+
+```
+
+```{r}
+AS_out <- race_cities_plot_data(df_avg, szsafd_gpc, 'AS')
+lm_res_AS <- plot_race_lm(AS_out,'AS', 'SZSAFD', 'GPC')
+
+```
+
+```{r}
+CA_out <- race_cities_plot_data(df_avg, szsafd_gpc, 'CA')
+plot_race_lm(CA_out,'CA', 'SZSAFD', 'GPC')
+```
+
+
+## Starting Analysis: prop dif across city for SZSAFD
+```{r city counts across total df}
+city_cts <- plyr::count(szsafd$cLocationCity)
+city_cts
+
+miss_cit <- setdiff(df_avg$City, city_cts$x)
+add_tocity <- data.frame(x = miss_cit,
+                         freq = rep(0, length(miss_cit)))
+city_cts <- rbind(city_cts, add_tocity)
+city_cts <- city_cts[city_cts$x != setdiff(city_cts$x, df_avg$City),]
+
+city_cts <- city_cts[order(city_cts$x), ]
+
+# Extracting only races from the null dataframe
+
+null_race_cts <- df_avg[, 1:8]
+#View(null_race_cts)
+rownames(null_race_cts) <- null_race_cts$City
+null_race_cts$City <- NULL
+
+null_race_cts <- t(null_race_cts)
+
+null_race_props <- as.data.frame(apply(null_race_cts, MARGIN = 2, function(x) {x / sum(x)}))
+szsafd_cogs2 <- szsafd[szsafd$cStudy == 'COGS2', ]
+szsafd_bsnip <- szsafd[szsafd$cStudy == 'BSNIP1' | szsafd$cStudy =='BSNIP2', ]
+szsafd_gpc <- szsafd[szsafd$cStudy == 'GPC', ]
+# View(null_race_props)
+
+missing_cities <- setdiff(df_avg$City, szsafd_gpc$cLocationCity)
+zero_cts <- data.frame(cRace = rep(c('AA', 'AS', 'CA'),length(missing_cities)),
+                       cLocationCity = rep(missing_cities, 3),
+                       total_count = rep(0,3 * length(missing_cities)))
+
+# count up the subjects in each city by race
+brc <- szsafd_gpc %>%  
+  dplyr::group_by(cRace, cLocationCity) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+brc <- rbind(brc, zero_cts)
+#brc <- brc[brc$cLocationCity != setdiff(brc$cLocationCity, df_avg$City),]
+
+brc <- brc[order(brc$cLocationCity), ]
+
+brc$Prop <- NA
+View(brc)
+
+
+# turn into proportions
+for (i in 1:length(test_cities)) {
+ if (sum(brc$total_count[brc$cLocationCity ==  test_cities2[i]]) != 0) {
+    brc$Prop[brc$cLocationCity == test_cities2[i]] <- brc$total_count[brc$cLocationCity == test_cities2[i]] / sum(brc$total_count[brc$cLocationCity == test_cities2[i]])
+  }
+  else {
+    brc$Prop[brc$cLocationCity == test_cities2[i]] <- 0
+  }
+  
+}
+```
+
+### AA SZSAFD
+```{r}
+AA_row_null <- as.data.frame(t(null_race_props['AA',]))
+#View(AA_row_null)
+AA_obs <- brc[brc$cRace == 'AA', ]
+AA_obs <- na.omit(AA_obs)
+
+# Verifying positional matching among cities
+sum(levels(factor(AA_obs$cLocationCity)) == rownames(AA_row_null))
+
+
+#View(AA_obs)
+AA_row_obs <- AA_obs$Prop
+
+propdif_AA <- AA_row_obs - AA_row_null$AA
+
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(AA_row_null)
+
+plot(log(ct_to_plot$freq), propdif_AA, main = 'SZSAFD: Proportion Difference by Sample Size for AA', xlab = 'Log(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+AA_lr <- lm(propdif_AA ~ log(ct_to_plot$freq))
+summary(AA_lr)
+abline(AA_lr, col = 'red', lwd = 2)
+
+mtext(paste('gpc Adj R-squared=', round(summary(AA_lr)$adj.r.squared,3)), side = 3)
+
+plot(AA_lr, 1)
+plot(AA_lr, 4)
+
+```
+
+### AS SZSAFD
+```{r}
+AS_row_null <- as.data.frame(t(null_race_props['AS',]))
+#View(AS_row_null)
+AS_obs <- brc[brc$cRace == 'AS', ]
+AS_obs <- na.omit(AS_obs)
+
+# Verifying positional matching among cities
+sum(levels(factor(AS_obs$cLocationCity)) == rownames(AS_row_null))
+
+
+#View(AS_obs)
+AS_row_obs <- AS_obs$Prop
+
+propdif_AS <- AS_row_obs - AS_row_null$AS
+
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(AS_row_null)
+
+plot(log(ct_to_plot$freq), propdif_AS, main = 'SZSAFD: Proportion Difference by Sample Size for AS', xlab = 'Log(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+AS_lr <- lm(propdif_AS ~ log(ct_to_plot$freq))
+summary(AS_lr)
+abline(AS_lr, col = 'red', lwd = 2)
+
+mtext(paste('Adj R-squared=', round(summary(AS_lr)$adj.r.squared,3)), side = 3)
+
+plot(AS_lr, 1)
+plot(AS_lr, 4)
+
+```
+
+### CA SZSAFD
+```{r}
+CA_row_null <- as.data.frame(t(null_race_props['CA',]))
+#View(CA_row_null)
+CA_obs <- brc[brc$cRace == 'CA', ]
+CA_obs <- na.omit(CA_obs)
+
+# Verifying positional matching among cities
+sum(levels(factor(CA_obs$cLocationCity)) == rownames(CA_row_null))
+
+
+#View(CA_obs)
+CA_row_obs <- CA_obs$Prop
+
+propdif_CA <- CA_row_obs - CA_row_null$CA
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(CA_row_null)
+
+plot(log(ct_to_plot$freq), propdif_CA, main = 'SZSAFD: Proportion Difference by Sample Size for CA', xlab = 'Log(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+CA_lr <- lm(propdif_CA ~ log(ct_to_plot$freq))
+summary(CA_lr)
+abline(CA_lr, col = 'red', lwd = 2)
+
+mtext(paste('Adj R-squared=', round(summary(CA_lr)$adj.r.squared,3)), side = 3)
+
+plot(CA_lr, 1)
+plot(CA_lr, 4)
+
+```
+
+## Repeated analysis for CS
+```{r}
+
+# Looking at city intersection between dataset and 
+test_cities <- intersect(df_avg$City, cs$cLocationCity)
+test_cities
+
+# Checking which cities are missing
+missing_cities <- setdiff(df_avg$City, cs$cLocationCity)
+zero_cts <- data.frame(cRace = rep(c('AA', 'AS', 'CA'),2),
+                       cLocationCity = rep(missing_cities, 3),
+                       total_count = rep(0,6))
+# View(zero_cts)
+
+## Augusta and Baltimore don't have CS
+```
+
+### Begin total counts
+```{r city counts across total df}
+city_cts <- plyr::count(cs$cLocationCity)
+miss_cit <- setdiff(df_avg$City, city_cts$x)
+add_tocity <- data.frame(x = miss_cit,
+                         freq = rep(0, length(miss_cit)))
+city_cts <- rbind(city_cts, add_tocity)
+city_cts <- city_cts[city_cts$x != setdiff(city_cts$x, df_avg$City),]
+
+city_cts <- city_cts[order(city_cts$x), ]
+rownames(city_cts) <- NULL
+View(city_cts)
+
+# Extracting only races from the null dataframe
+
+null_race_cts <- df_avg[, 1:8]
+#View(null_race_cts)
+rownames(null_race_cts) <- null_race_cts$City
+null_race_cts$City <- NULL
+
+null_race_cts <- t(null_race_cts)
+
+
+null_race_props <- as.data.frame(apply(null_race_cts, MARGIN = 2, function(x) {x / sum(x)}))
+
+# View(null_race_props)
+
+# count up the subjects in each city by race
+brc <- cs %>%  
+  dplyr::group_by(cRace, cLocationCity) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+brc <- rbind(brc, zero_cts)
+brc <- brc[brc$cLocationCity != setdiff(brc$cLocationCity, df_avg$City),]
+
+brc <- brc[order(brc$cLocationCity), ]
+
+brc$Prop <- NA
+#View(brc)
+
+
+# turn into proportions
+for (i in 1:length(test_cities2)) {
+  if (sum(brc$total_count[brc$cLocationCity ==  test_cities2[i]]) != 0) {
+    brc$Prop[brc$cLocationCity == test_cities2[i]] <- brc$total_count[brc$cLocationCity == test_cities2[i]] / sum(brc$total_count[brc$cLocationCity == test_cities2[i]])
+  }
+  else {
+    brc$Prop[brc$cLocationCity == test_cities2[i]] <- 0
+  }
+  
+}
+```
+
+### AA CS
+```{r}
+AA_row_null <- as.data.frame(t(null_race_props['AA',]))
+#View(AA_row_null)
+
+# still_miss <- setdiff(rownames(AA_row_null), AA_obs$cLocationCity)
+# add_zero <- data.frame(cRace = rep('AA',length(still_miss)),
+#                        cLocationCity = still_miss,
+#                        total_count = rep(0,length(still_miss)),
+#                        Prop = rep(0, length(still_miss)))
+# 
+# brc <- rbind(brc, add_zero)
+
+AA_obs <- brc[brc$cRace == 'AA', ]
+
+# get rid of cities 
+AA_obs <- na.omit(AA_obs)
+
+View(AA_obs)
+
+AA_obs <- AA_obs[order(AA_obs$cLocationCity), ]
+
+# Verifying positional matching among cities
+levels(factor(AA_obs$cLocationCity)) == rownames(AA_row_null)
+
+setdiff(AA_obs$cLocationCity, rownames(AA_row_null))
+#View(AA_obs)
+#View(AA_row_null)
+AA_row_obs <- AA_obs$Prop
+
+propdif_AA <- AA_row_obs - AA_row_null$AA
+
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities2, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(AA_row_null)
+
+plot(sqrt(ct_to_plot$freq), propdif_AA, main = 'CS: Proportion Difference by Sample Size for AA', xlab = 'sqrt(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+AA_lr <- lm(propdif_AA ~ sqrt(ct_to_plot$freq))
+summary(AA_lr)
+abline(AA_lr, col = 'red', lwd = 2)
+
+mtext(paste('Adj R-squared=', round(summary(AA_lr)$adj.r.squared,3)), side = 3)
+
+plot(AA_lr, 1)
+plot(AA_lr, 4)
+
+```
+
+### AS CS
+```{r}
+AS_row_null <- as.data.frame(t(null_race_props['AS',]))
+
+still_miss <- setdiff(rownames(AS_row_null), AS_obs$cLocationCity)
+add_zero <- data.frame(cRace = rep('AS',length(still_miss)),
+                       cLocationCity = still_miss,
+                       total_count = rep(0,length(still_miss)),
+                       Prop = rep(0, length(still_miss)))
+
+#View(AS_row_null)
+AS_obs <- brc[brc$cRace == 'AS', ]
+AS_obs <- na.omit(AS_obs)
+
+# Verifying positional matching among cities
+sum(levels(factor(AS_obs$cLocationCity)) == rownames(AS_row_null))
+
+#View(AS_obs)
+AS_row_obs <- AS_obs$Prop
+
+propdif_AS <- AS_row_obs - AS_row_null$AS
+
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities2, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(AS_row_null)
+
+plot(sqrt(ct_to_plot$freq), propdif_AS, main = 'CS: Proportion Difference by Sample Size for AS', xlab = 'Sqrt(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+AS_lr <- lm(propdif_AS ~ sqrt(ct_to_plot$freq))
+summary(AS_lr)
+abline(AS_lr, col = 'red', lwd = 2)
+
+mtext(paste('Adj R-squared=', round(summary(AS_lr)$adj.r.squared,3)), side = 3)
+
+plot(AS_lr, 1)
+plot(AS_lr, 4)
+
+```
+
+### CA CS
+```{r}
+CA_row_null <- as.data.frame(t(null_race_props['CA',]))
+
+# still_miss <- setdiff(rownames(CA_row_null), CA_obs$cLocationCity)
+# add_zero <- data.frame(cRace = rep('CA',length(still_miss)),
+#                        cLocationCity = still_miss,
+#                        total_count = rep(0,length(still_miss)),
+#                        Prop = rep(0, length(still_miss)))
+# 
+# brc <- rbind(brc, add_zero)
+#View(CA_row_null)
+CA_obs <- brc[brc$cRace == 'CA', ]
+CA_obs <- na.omit(CA_obs)
+
+# Verifying positional matching among cities
+sum(levels(factor(CA_obs$cLocationCity)) == rownames(CA_row_null))
+
+
+#View(CA_obs)
+CA_row_obs <- CA_obs$Prop
+
+propdif_CA <- CA_row_obs - CA_row_null$CA
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities2, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(CA_row_null)
+
+plot(sqrt(ct_to_plot$freq), propdif_CA, main = 'CS: Proportion Difference by Sample Size for CA', xlab = 'Sqrt(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+CA_lr <- lm(propdif_CA ~ sqrt(ct_to_plot$freq))
+summary(CA_lr)
+abline(CA_lr, col = 'red', lwd = 2)
+
+mtext(paste('Adj R-squared=', round(summary(CA_lr)$adj.r.squared,3)), side = 3)
+
+plot(CA_lr, 1)
+plot(CA_lr, 4)
+
+```
+
+
+
+```{r city counts across total df}
+city_cts <- plyr::count(mdd$cLocationCity)
+city_cts
+
+# Extracting only races from the null dataframe
+
+null_race_cts <- df_avg[, 1:8]
+#View(null_race_cts)
+rownames(null_race_cts) <- null_race_cts$City
+null_race_cts$City <- NULL
+
+null_race_cts <- t(null_race_cts)
+
+null_race_props <- as.data.frame(apply(null_race_cts, MARGIN = 2, function(x) {x / sum(x)}))
+
+# View(null_race_props)
+
+# count up the subjects in each city by race
+brc <- mdd %>%  
+  dplyr::group_by(cRace, cLocationCity) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+brc$Prop <- NA
+#View(brc)
+
+
+# turn into proportions
+for (i in 1:length(test_cities)) {
+  brc$Prop[brc$cLocationCity == test_cities[i]] <- brc$total_count[brc$cLocationCity == test_cities[i]] / sum(brc$total_count[brc$cLocationCity == test_cities[i]])
+}
+```
+
+### AA MDD
+```{r}
+AA_row_null <- as.data.frame(t(null_race_props['AA',]))
+#View(AA_row_null)
+AA_obs <- brc[brc$cRace == 'AA', ]
+AA_obs <- na.omit(AA_obs)
+
+# Verifying positional matching among cities
+sum(levels(factor(AA_obs$cLocationCity)) == rownames(AA_row_null))
+
+
+#View(AA_obs)
+AA_row_obs <- AA_obs$Prop
+
+propdif_AA <- AA_row_obs - AA_row_null$AA
+
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(AA_row_null)
+
+plot(log(ct_to_plot$freq), propdif_AA, main = 'MDD: Proportion Difference by Sample Size for AA', xlab = 'Log(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+AA_lr <- lm(propdif_AA ~ log(ct_to_plot$freq))
+summary(AA_lr)
+abline(AA_lr, col = 'red', lwd = 2)
+
+mtext(paste('Adj R-squared=', round(summary(AA_lr)$adj.r.squared,3)), side = 3)
+
+plot(AA_lr, 1)
+plot(AA_lr, 4)
+
+```
+
+### AS MDD
+```{r}
+AS_row_null <- as.data.frame(t(null_race_props['AS',]))
+#View(AS_row_null)
+AS_obs <- brc[brc$cRace == 'AS', ]
+AS_obs <- na.omit(AS_obs)
+
+# Verifying positional matching among cities
+sum(levels(factor(AS_obs$cLocationCity)) == rownames(AS_row_null))
+
+
+#View(AS_obs)
+AS_row_obs <- AS_obs$Prop
+
+propdif_AS <- AS_row_obs - AS_row_null$AS
+
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(AS_row_null)
+
+plot(log(ct_to_plot$freq), propdif_AS, main = 'MDD: Proportion Difference by Sample Size for AS', xlab = 'Log(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+AS_lr <- lm(propdif_AS ~ log(ct_to_plot$freq))
+summary(AS_lr)
+abline(AS_lr, col = 'red', lwd = 2)
+
+mtext(paste('Adj R-squared=', round(summary(AS_lr)$adj.r.squared,3)), side = 3)
+
+plot(AS_lr, 1)
+plot(AS_lr, 4)
+
+```
+
+### CA MDD
+```{r}
+CA_row_null <- as.data.frame(t(null_race_props['CA',]))
+#View(CA_row_null)
+CA_obs <- brc[brc$cRace == 'CA', ]
+CA_obs <- na.omit(CA_obs)
+
+# Verifying positional matching among cities
+sum(levels(factor(CA_obs$cLocationCity)) == rownames(CA_row_null))
+
+
+#View(CA_obs)
+CA_row_obs <- CA_obs$Prop
+
+propdif_CA <- CA_row_obs - CA_row_null$CA
+
+ct_to_plot <- city_cts[city_cts$x %in% test_cities, ]
+#View(city_cts)
+
+# Verifying positional matching
+ct_to_plot$x == rownames(CA_row_null)
+
+plot(log(ct_to_plot$freq), propdif_CA, main = 'MDD: Proportion Difference by Sample Size for CA', xlab = 'Log(City Sample Size)', ylab = 'Proportion Difference (Observed - Census Average)' )
+
+CA_lr <- lm(propdif_CA ~ log(ct_to_plot$freq))
+summary(CA_lr)
+abline(CA_lr, col = 'red', lwd = 2)
+
+mtext(paste('Adj R-squared=', round(summary(CA_lr)$adj.r.squared,3)), side = 3)
+
+plot(CA_lr, 1)
+plot(CA_lr, 4)

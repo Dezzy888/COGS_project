@@ -1,0 +1,172 @@
+---
+title: "58. Added Variable Analysis COGS"
+author: "Daniel Zoleikhaeian"
+date: "2023-09-06"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# loading dataset and libraries
+```{r}
+library(car)
+library(readxl)
+library(ggplot2)
+library(GGally)
+library(splines)
+library(plyr)
+library(effects)
+df <- read_xlsx('C:/Users/danie/Documents/Joshi Lab Materials/3 Studies Dataset/Dataset Merge/COGS_data.xlsx')
+
+colnames(df)
+col_sub <- c('SEX', 'GROUP', 'RACE','AGE','ETHNICITY','MMN135_205')
+
+df_sub <- df[, col_sub]
+head(df_sub)
+
+colnames(df_sub)
+
+# omitting missing data
+df_sub <- df_sub[complete.cases(df_sub), ] # 1628, as expected
+
+# transforming the categorical variables by a dictionary
+dict_transform <- function(keys, values, vec) {
+  for (i in 1:length(keys)) {
+    vec[vec == keys[i]] <- values[i]
+  }
+  return (vec)
+}
+
+df_sub$ETHNICITY2 <- factor(dict_transform(c(1,2), c('Yes', 'No'), df_sub$ETHNICITY) )
+df_sub$RACE2 <- factor(dict_transform(1:7, c('AE','AS','NH','AA','CA','MR','UNK'), df_sub$RACE))
+df_sub$GROUP2 <- factor(dict_transform(c(1,2), c('CS', 'SZSAFD'), df_sub$GROUP))
+
+# releveling
+df_sub$ETHNICITY2 <- relevel(df_sub$ETHNICITY2, ref = 'No')
+df_sub$RACE2 <- relevel(df_sub$RACE2, ref = 'AA')
+df_sub$GROUP2 <- relevel(df_sub$GROUP2, ref = 'CS')
+
+# subsetting by group
+cs <- df_sub[df_sub$GROUP == 1, ]
+sz <- df_sub[df_sub$GROUP == 2, ]
+```
+
+# Added Variable Analysis
+```{r}
+mmn_cs <- lm(MMN135_205 ~ AGE, data = cs)
+summary(mmn_cs) # R2 = 0.1332
+res_cs <- resid(mmn_cs)
+dem_cs <-lm(res_cs ~ SEX + RACE2 + ETHNICITY2, data = cs)
+summary(dem_cs) # R2 = 0.06298
+
+mmn_sz <- lm(MMN135_205 ~ AGE, data = sz)
+summary(mmn_sz) # R2 = 0.1221
+res_sz <- resid(mmn_sz)
+dem_sz <-lm(res_sz ~ SEX + RACE2 + ETHNICITY2, data = sz)
+summary(dem_sz) # R2 = 0.02636
+```
+
+Preliminary conclusion:
+* For SZ, demographic variables are less explanatory of the variance explained by AGE compared to in CS
+
+# Separate Site Analysis
+
+## Prepping the overall dataframe
+```{r}
+df$ETHNICITY2 <- factor(dict_transform(c(1,2), c('Yes', 'No'), df$ETHNICITY) )
+df$RACE2 <- factor(dict_transform(1:7, c('AE','AS','NH','AA','CA','MR','UNK'), df$RACE))
+df$GROUP2 <- factor(dict_transform(c(1,2), c('CS', 'SZSAFD'), df$GROUP))
+
+# releveling
+df$ETHNICITY2 <- relevel(df$ETHNICITY2, ref = 'No')
+df$RACE2 <- relevel(df$RACE2, ref = 'AA')
+df$GROUP2 <- relevel(df$GROUP2, ref = 'CS')
+```
+
+
+```{r}
+sites <- unique(df$SITEID) # 5 different sites, coded 1 through 5
+sites[6] <- 6 # add a "6th site" for the pooled dataset
+
+lm_list <- vector(mode = 'list', length = 6)
+names(lm_list) <- c('UCLA', 'UCSD', 'Sinai', 'Penn', 'UW', 'Pool')
+
+
+for (i in sites) {
+  
+  list_in <- vector(mode = 'list', length = 4)
+  names(list_in) <- c('CS', 'SZ', 'CS aov','SZ aov')
+  
+  if (i != 6) {
+    
+    mod_cs <- lm(MMN135_205 ~ AGE + SEX + RACE2 + ETHNICITY2, data = df[df$SITEID == i & df$GROUP == 1, ]) 
+    cs_res <- as.data.frame(summary(mod_cs)$coefficients)
+    cs_res$sig_code <- ifelse(cs_res$`Pr(>|t|)` > 0.05, '-', '*')
+    
+    mod_sz <- lm(MMN135_205 ~ AGE + SEX + RACE2 + ETHNICITY2, data = df[df$SITEID == i & df$GROUP == 2, ])
+    sz_res <- as.data.frame(summary(mod_sz)$coefficients)
+    sz_res$sig_code <- ifelse(sz_res$`Pr(>|t|)` > 0.05, '-', '*')
+    
+    list_in[[1]] <- cs_res
+    list_in[[2]] <- sz_res
+    list_in[[3]] <- Anova(mod_cs)
+    list_in[[4]] <- Anova(mod_sz)
+    
+    lm_list[[i]] <- list_in
+    
+    
+    
+  } else {
+    
+    mod_cs <- lm(MMN135_205 ~ AGE + SEX + RACE2 + ETHNICITY2, data = df[df$GROUP == 1, ]) 
+    cs_res <- as.data.frame(summary(mod_cs)$coefficients)
+    cs_res$sig_code <- ifelse(cs_res$`Pr(>|t|)` > 0.05, '-', '*')
+    
+    mod_sz <- lm(MMN135_205 ~ AGE + SEX + RACE2 + ETHNICITY2, data = df[df$GROUP == 2, ])
+    sz_res <- as.data.frame(summary(mod_sz)$coefficients)
+    sz_res$sig_code <- ifelse(sz_res$`Pr(>|t|)` > 0.05, '-', '*')
+    
+   list_in[[1]] <- cs_res
+   list_in[[2]] <- sz_res
+   list_in[[3]] <- Anova(mod_cs)
+   list_in[[4]] <- Anova(mod_sz)
+   
+   lm_list[[i]] <- list_in
+    
+  }
+}
+
+lm_list
+
+```
+
+* Different sites had different findings
+
+* AGE, SEX, and RACE are significant in the pool for both diagnoses
+- SEX and RACE not significant in any of the sites for SZ
+- Proposed explanation: these SEX and RACE are weaker predictors of MMN, so larger sample size is needed to detect a significant effect
+
+* AGE not significant in:
+- Sinai CS
+* SEX not significant in:
+- UW SZ and CS
+- Penn SZ
+- Sinai SZ and CS
+- SD CS and SZ
+- LA SZ
+* RACE not significant in:
+- LA CS and SZ
+- SD SZ
+- Sinai CS and SZ
+- Penn SZ
+- UW SZ
+
+## Checking the sample sizes
+```{r}
+plyr::count(df[df$GROUP==1, ], 'SITEID') # Roughly equal sample sizes among CS
+plyr::count(df[df$GROUP==2, ], 'SITEID') # UCLA dominates among SZ
+```

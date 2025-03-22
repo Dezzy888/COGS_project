@@ -1,0 +1,19 @@
+Race,Hispanic/Latino,Gender,HCS Sampling Trend,p-value
+AA,No,F,Over,9.67e-02
+AA,No,M,Over,3.05e-06**
+AA,Yes,F,Over,1.00e+00
+AA,Yes,M,Over,1.00e+00
+AE,Yes,F,Under,1.00e+00
+AE,Yes,M,Over,1.00e+00
+AS,No,F,Under,1.18e-01
+AS,No,M,Under,8.96e-02
+CA,No,F,Over,2.34e-02**
+CA,No,M,Over,2.35e-01
+CA,Yes,F,Under,5.96e-05**
+CA,Yes,M,Under,1.35e-05**
+NH,No,F,Over,1.38e-04**
+NH,No,M,Over,2.43e-02**
+OT/MR,No,F,Over,7.80e-03**
+OT/MR,No,M,Over,3.23e-02**
+OT/MR,Yes,F,Under,4.55e-04**
+OT/MR,Yes,M,Under,6.63e-08**

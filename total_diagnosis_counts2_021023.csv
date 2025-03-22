@@ -1,0 +1,87 @@
+,cStudy,cDiagnosis,total_count,Proportion,cDiagnosis2,cDiagnosis3,cDiagnosis4
+1,BSNIP1,BP,311,0.334408602,,,
+2,BSNIP1,SAD,223,0.239784946,,,
+3,BSNIP1,SZ,396,0.425806452,,,
+4,BSNIP2,ASD,9,0.004426955,,,
+5,BSNIP2,BP,290,0.142646335,,,
+6,BSNIP2,BPnon,35,0.017215937,,,
+7,BSNIP2,NC,623,0.306443679,,,
+8,BSNIP2,SAD,500,0.245941958,,,
+9,BSNIP2,SZ,560,0.275454993,,,
+10,BSNIP2,UNK,16,0.007870143,,,
+11,COGS2,CTRL,1062,0.428744449,,,
+12,COGS2,SAFD,62,0.025030279,,,
+13,COGS2,SZ,1353,0.546225273,,,
+14,GPC,Bipolar I disorder,1067,0.033803263,,,
+15,GPC,Bipolar I with psychosis,2952,0.093521305,,,
+16,GPC,Bipolar II disorder,80,0.002534453,,,
+17,GPC,Bipolar II with psychosis,17,0.000538571,,,
+18,GPC,Control,14089,0.446348804,,,
+19,GPC,Control: depression,767,0.024299065,,,
+20,GPC,Control: does not qualify,202,0.006399493,,,
+21,GPC,Does not qualify,156,0.004942183,,,
+22,GPC,Hypomanic Episode/s,3,9.50E-05,,,
+23,GPC,Major depressive disorder,48,0.001520672,,,
+24,GPC,Major depressive disorder with psychosis,10,0.000316807,,,
+25,GPC,"Major depressive disorder, moderate",15,0.00047521,,,
+26,GPC,"Major depressive disorder, severe",13,0.000411849,,,
+27,GPC,Manic episode (Bipolar I),120,0.003801679,,,
+28,GPC,Manic episode with psychosis (Bipolar I),209,0.006621258,,,
+29,GPC,Psychosis NOS,5,0.000158403,,,
+30,GPC,"Schizoaffective disorder, bipolar type",2093,0.066307619,,,
+31,GPC,"Schizoaffective disorder, depressive type",577,0.01827974,,,
+32,GPC,Schizophrenia,8,0.000253445,,,
+33,GPC,"Schizophrenia, Hebephrenic",2907,0.092095676,,,
+34,GPC,"Schizophrenia, Paranoid",1297,0.041089815,,,
+35,GPC,"Schizophrenia, Paranoid; Bipolar I",2,6.34E-05,,,
+36,GPC,"Schizophrenia, Paranoid; Bipolar II",7,0.000221765,,,
+37,GPC,"Schizophrenia, Paranoid; Major depressive disorder",39,0.001235546,,,
+38,GPC,"Schizophrenia, Undifferentiated",4279,0.13556154,,,
+39,GPC,"Schizophrenia, Undifferentiated; Bipolar I",4,0.000126723,,,
+40,GPC,"Schizophrenia, Undifferentiated; Bipolar II",12,0.000380168,,,
+41,GPC,"Schizophrenia, Undifferentiated; Hypomania",1,3.17E-05,,,
+42,GPC,"Schizophrenia, Undifferentiated; Major depressive disorder",294,0.009314114,,,
+43,GPC,Schizophreniform,2,6.34E-05,,,
+44,GPC,Schizophreniform; Major depressive disorder,1,3.17E-05,,,
+45,GPC,Unaffected,289,0.00915571,,,
+46,Total,ASD,9,0.00024321,,,
+47,Total,Bipolar I disorder,1067,0.028833941,BAD1_psy,BAD1,BAD12
+48,Total,Bipolar I with psychosis,2952,0.079773004,BAD1_psy,BAD1,BAD12
+49,Total,Bipolar II disorder,80,0.00216187,BAD2,BAD2,BAD12
+50,Total,Bipolar II with psychosis,17,0.000459397,,,
+51,Total,BP,601,0.016241049,BAD1_psy,BAD1,BAD12
+52,Total,BPnon,35,0.000945818,BAD1_nopsy,BAD1,BAD12
+53,Total,Control,14089,0.380732333,CS,CS,CS
+54,Total,Control: depression,767,0.020726929,CS,CS,CS
+55,Total,Control: does not qualify,202,0.005458722,CS,CS,CS
+56,Total,CTRL,1062,0.028698824,CS,CS,CS
+57,Total,Does not qualify,156,0.004215647,,,
+58,Total,Hypomanic Episode/s,3,8.11E-05,,,
+59,Total,Major depressive disorder,48,0.001297122,MDD,MDD,MDD
+60,Total,Major depressive disorder with psychosis,10,0.000270234,MDD_psy,MDD,MDD
+61,Total,"Major depressive disorder, moderate",15,0.000405351,MDD,MDD,MDD
+62,Total,"Major depressive disorder, severe",13,0.000351304,MDD,MDD,MDD
+63,Total,Manic episode (Bipolar I),120,0.003242805,BAD1_psy,BAD1,BAD12
+64,Total,Manic episode with psychosis (Bipolar I),209,0.005647885,BAD1_psy,BAD1,BAD12
+65,Total,NC,623,0.016835563,CS,CS,CS
+66,Total,Psychosis NOS,5,0.000135117,,,
+67,Total,SAD,723,0.0195379,SAFD,SZSAFD,SZSAFD
+68,Total,SAFD,62,0.001675449,SAFD,SZSAFD,SZSAFD
+69,Total,"Schizoaffective disorder, bipolar type",2093,0.056559924,SAFD,SZSAFD,SZSAFD
+70,Total,"Schizoaffective disorder, depressive type",577,0.015592488,SAFD,SZSAFD,SZSAFD
+71,Total,Schizophrenia,8,0.000216187,SZ,SZSAFD,SZSAFD
+72,Total,"Schizophrenia, Hebephrenic",2907,0.078556952,SZ,SZSAFD,SZSAFD
+73,Total,"Schizophrenia, Paranoid",1297,0.035049318,SZ,SZSAFD,SZSAFD
+74,Total,"Schizophrenia, Paranoid; Bipolar I",2,5.40E-05,,,
+75,Total,"Schizophrenia, Paranoid; Bipolar II",7,0.000189164,,,
+76,Total,"Schizophrenia, Paranoid; Major depressive disorder",39,0.001053912,SZ,SZSAFD,SZSAFD
+77,Total,"Schizophrenia, Undifferentiated",4279,0.115633023,SZ,SZSAFD,SZSAFD
+78,Total,"Schizophrenia, Undifferentiated; Bipolar I",4,0.000108094,,,
+79,Total,"Schizophrenia, Undifferentiated; Bipolar II",12,0.000324281,,,
+80,Total,"Schizophrenia, Undifferentiated; Hypomania",1,2.70E-05,,,
+81,Total,"Schizophrenia, Undifferentiated; Major depressive disorder",294,0.007944872,SZ,SZSAFD,SZSAFD
+82,Total,Schizophreniform,2,5.40E-05,,,
+83,Total,Schizophreniform; Major depressive disorder,1,2.70E-05,,,
+84,Total,SZ,2309,0.062396973,SZ,SZSAFD,SZSAFD
+85,Total,Unaffected,289,0.007809755,CS,CS,CS
+86,Total,UNK,16,0.000432374,,,

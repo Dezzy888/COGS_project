@@ -1,0 +1,370 @@
+---
+title: "Proportions over Time"
+author: "Daniel Zoleikhaeian"
+date: "2023-04-24"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+```
+
+## Loading Dataset
+```{r}
+us_data <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+head(us_data)
+us_data$cEnrollmentYear <- substr(us_data$cEnrollmentDateYear, 1,4)
+
+# Combining OT/UNK and UNK into OT/UNK
+us_data$cRace[us_data$cRace %in% c('UNK', 'OT/UNK')] <- 'OT'
+
+# Setting working directory
+setwd("C:/Users/danie/Documents/Joshi Lab Materials/3 Studies Dataset/Dataset Merge/Rmd Files/Enrollment Plots")
+```
+
+## Pipeline for calculating proportions over time - not cumulative
+```{r}
+props_over_time <- function(studies) {
+  
+  # make dataframe to store results
+  prop_res <- data.frame(Race = c('AA', 'AE', 'AS', 'CA', 'MR', 'NH', 'OT'),
+                         y2010 = rep(0, 7),
+                         y2011 = rep(0, 7),
+                         y2012 = rep(0, 7),
+                         y2013 = rep(0, 7),
+                         y2014 = rep(0, 7),
+                         y2015 = rep(0, 7),
+                         y2016 = rep(0, 7),
+                         y2017 = rep(0, 7),
+                         y2018 = rep(0, 7),
+                         y2019 = rep(0, 7),
+                         y2020 = rep(0, 7))
+  
+  # Subsetting the merged dataset to the study of interest
+  year_vec <- 2010:2020
+  us_data_sub <- us_data[us_data$cStudy %in% studies, ]
+  for (i in 1:length(year_vec)) {
+    us_data_sub2 <- us_data_sub[us_data_sub$cEnrollmentYear == year_vec[i], ]
+    
+    # Counting the races
+    race_counts <- plyr::count(us_data_sub2, 'cRace')
+    race_counts$prop <- race_counts$freq / sum(race_counts$freq)
+    
+    # Adding missing races
+    miss_race <- prop_res$Race[!(prop_res$Race %in% race_counts$cRace)]
+    
+    if (length(miss_race) != 0) {
+      race_counts <- rbind(race_counts, data.frame(cRace = miss_race, 
+                                                 freq =  rep(0,length(miss_race)),
+                                                 prop = rep(0,length(miss_race))))
+    }
+    
+    
+    # reordering the dataframe 
+    race_counts <- race_counts[order(race_counts$cRace), ]
+    
+  
+  # Adding to dataframe
+    prop_res[, i + 1] <- race_counts$prop
+  }
+  return (prop_res)
+}
+```
+
+## Pipeline for calculating proportions over time - cumulative
+```{r}
+props_over_timeC <- function(studies) {
+  
+  # make dataframe to store results
+  prop_res <- data.frame(Race = c('AA', 'AE', 'AS', 'CA', 'MR', 'NH', 'OT'),
+                         y2010 = rep(0, 7),
+                         y2011 = rep(0, 7),
+                         y2012 = rep(0, 7),
+                         y2013 = rep(0, 7),
+                         y2014 = rep(0, 7),
+                         y2015 = rep(0, 7),
+                         y2016 = rep(0, 7),
+                         y2017 = rep(0, 7),
+                         y2018 = rep(0, 7),
+                         y2019 = rep(0, 7),
+                         y2020 = rep(0, 7))
+  
+  # Subsetting the merged dataset to the study of interest
+  year_vec <- 2010:2020
+  us_data_sub <- us_data[us_data$cStudy %in% studies, ]
+
+  cumulative_count <- rep(0, 7)
+  for (i in 1:length(year_vec)) {
+    us_data_sub2 <- us_data_sub[us_data_sub$cEnrollmentYear <= year_vec[i], ]
+    
+    # Counting the races
+    race_counts <- plyr::count(us_data_sub2, 'cRace')
+    
+    race_counts$prop <- race_counts$freq / sum(race_counts$freq)
+    
+    # Adding missing races
+    miss_race <- prop_res$Race[!(prop_res$Race %in% race_counts$cRace)]
+    
+    if (length(miss_race) != 0) {
+      race_counts <- rbind(race_counts, data.frame(cRace = miss_race, 
+                                                 freq =  rep(0,length(miss_race)),
+                                                 prop = rep(0,length(miss_race))))
+    }
+    
+    
+    # reordering the dataframe 
+    race_counts <- race_counts[order(race_counts$cRace), ]
+    
+    cumulative_count <- cumulative_count + race_counts$freq
+    names(cumulative_count) <- race_counts$cRace
+    
+  # Adding to dataframe
+    prop_res[, i + 1] <- cumulative_count / max(c(sum(cumulative_count),1))
+  }
+  return (prop_res)
+}
+```
+
+## Plots
+```{r}
+my_colors <- c('black', '#F8766D', '#85AD00', '#00A5FF', '#CF9400', '#FF689F', '#80796BFF')
+```
+
+### GPC: Proportions over Time
+```{r}
+pdf('GPC_plots.pdf')
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'GPC: Race Proportions over Time')
+grid()
+
+gpc_obj <- props_over_time('GPC')
+
+for (i in 1:nrow(gpc_obj)) {
+  lines(2010:2020, gpc_obj[i,2:ncol(gpc_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = gpc_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+```
+
+### GPC: Cumulative Proportion over Time
+```{r}
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'GPC: Cumulative Race Proportions over Time')
+grid()
+
+gpc_obj <- props_over_timeC('GPC')
+
+for (i in 1:nrow(gpc_obj)) {
+  lines(2010:2020, gpc_obj[i,2:ncol(gpc_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = gpc_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+dev.off()
+```
+
+### COGS2: Proportion over Time
+```{r}
+pdf('COGS2_plots.pdf')
+
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'COGS2: Race Proportions over Time')
+grid()
+
+cogs2_obj <- props_over_time('COGS2')
+
+for (i in 1:nrow(cogs2_obj)) {
+  lines(2010:2020, cogs2_obj[i,2:ncol(cogs2_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = cogs2_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+```
+
+### COGS2: Cumulative Proportion over Time
+```{r}
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'COGS2: Cumulative Race Proportions over Time')
+grid()
+
+cogs2_obj <- props_over_timeC('COGS2')
+
+for (i in 1:nrow(cogs2_obj)) {
+  lines(2010:2020, cogs2_obj[i,2:ncol(cogs2_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = cogs2_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+
+dev.off()
+```
+
+### BSNIP: Proportions over Time
+```{r}
+pdf('BSNIP_plots.pdf')
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'BSNIP: Race Proportions over Time')
+grid()
+
+bsnip_obj <- props_over_time(c('BSNIP1', 'BSNIP2'))
+
+for (i in 1:nrow(bsnip_obj)) {
+  lines(2010:2020, bsnip_obj[i,2:ncol(bsnip_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = bsnip_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+
+
+```
+
+### BSNIP: Cumulative Proportion over Time
+```{r}
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'BSNIP: Cumulative Race Proportions over Time')
+grid()
+
+bsnip_obj <- props_over_timeC(c('BSNIP1', 'BSNIP2'))
+
+for (i in 1:nrow(bsnip_obj)) {
+  lines(2010:2020, bsnip_obj[i,2:ncol(bsnip_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = bsnip_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+
+dev.off()
+```
+
+## Exploring BSNIP further: BSNIP1 and BSNIP2
+### BSNIP1: Proportions over Time
+```{r}
+pdf('BSNIP12_over_time.pdf')
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'BSNIP1: Race Proportions over Time')
+grid()
+
+bsnip1_obj <- props_over_time('BSNIP1')
+
+for (i in 1:nrow(bsnip1_obj)) {
+  lines(2010:2020, bsnip1_obj[i,2:ncol(bsnip1_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = bsnip1_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+```
+
+### BSNIP2: Proportion over Time
+```{r}
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'BSNIP2: Race Proportions over Time')
+grid()
+
+bsnip2_obj <- props_over_time('BSNIP2')
+
+for (i in 1:nrow(bsnip2_obj)) {
+  lines(2010:2020, bsnip2_obj[i,2:ncol(bsnip2_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = bsnip2_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+dev.off()
+```
+
+
+### BSNIP1: Cumulative Proportion over Time
+```{r}
+pdf('BSNIP12_cumulative.pdf')
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'BSNIP1: Cumulative Race Proportions over Time')
+grid()
+
+bsnip1_obj <- props_over_timeC('BSNIP1')
+
+for (i in 1:nrow(bsnip1_obj)) {
+  lines(2010:2020, bsnip1_obj[i,2:ncol(bsnip1_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = bsnip1_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+```
+
+### BSNIP2: Cumulative Proportion over Time
+```{r}
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'BSNIP2: Cumulative Race Proportions over Time')
+grid()
+
+bsnip2_obj <- props_over_timeC('BSNIP2')
+
+for (i in 1:nrow(bsnip2_obj)) {
+  lines(2010:2020, bsnip2_obj[i,2:ncol(bsnip2_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = bsnip2_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+
+dev.off()
+```
+

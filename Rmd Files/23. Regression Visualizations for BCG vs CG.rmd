@@ -1,0 +1,351 @@
+---
+title: "Regression Visualizations for Different Study Aggregations"
+author: "Daniel Zoleikhaeian"
+date: "2023-04-10"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Dependencies
+```{r}
+library(plyr)
+library(dplyr)
+library(readxl)
+
+total_df <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+
+race_cities_plot_data2 <- function (null_df, tot_df, disease, study, race_acr) {
+  
+  obs_df <- tot_df[tot_df$cStudy %in% study & tot_df$cDiagnosis4 %in% disease, ]
+  
+  obs_cities <- obs_df$cLocationCity[obs_df$cRace == race_acr]
+  
+  test_cities <- intersect(null_df$City, obs_cities)
+  
+  null_race_cts <- null_df[, 1:8]
+
+  null_race_cts <- df_avg[, 1:8]
+  null_race_props <- null_race_cts
+
+  for (i in 1:nrow(null_race_cts)) {
+    city_tot <- sum(null_race_cts[i, 2:8])
+    null_race_props[i, 2:8] <- null_race_cts[i,2:8] / city_tot
+  }
+  null_race_props <- null_race_props[null_race_props$City %in% test_cities,]
+  null_race_props <- null_race_props[order(null_race_props$City), ]
+  
+  brc <- obs_df %>%  
+    dplyr::group_by(cRace, cLocationCity) %>%  
+    dplyr::summarise(total_count=n(), .groups = 'drop')
+  
+  brc <- brc[brc$cLocationCity %in% test_cities, ]
+  
+  brc <- brc[order(brc$cLocationCity), ]
+  brc$Prop <- NA
+  
+  # Turning counts into proportions
+  for (i in 1:length(test_cities)) {
+    brc$Prop[brc$cLocationCity == test_cities[i]] <- brc$total_count[brc$cLocationCity == test_cities[i]] / sum(brc$total_count[brc$cLocationCity == test_cities[i]])
+  }
+  
+  null_row <- as.data.frame(null_race_props[,c('City', race_acr)])
+  obs_races <- brc[brc$cRace == race_acr, ]
+  obs_prop <- obs_races$Prop
+  
+  ## Begin output variables to send to lm() and plot()
+  propdif <- obs_prop - null_row[,2] ## response
+  names(propdif) <- test_cities
+  
+  city_cts <- plyr::count(obs_df$cLocationCity)
+  ct_to_plot <- city_cts$freq[city_cts$x %in% test_cities] ## predictor 1
+  
+  null_race_cts <- null_race_cts[null_race_cts$City %in% test_cities, ]
+  race_of_interest_null <- null_race_cts[, colnames(null_race_cts) == race_acr] ## predictor 2
+  
+  null_race_sums <- as.data.frame(apply(null_race_cts[,-1], 1, sum)) ## predictor 3
+  colnames(null_race_sums) <- 'Total City Population'
+  
+  output <- list(propdif, ct_to_plot, race_of_interest_null, null_race_sums[,1])
+  names(output) <- c('Prop dif', 'Total City Population', 'census average race count', 'census average pop total')
+  
+  return (output)
+  
+}
+
+df_check_2010 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2010.xlsx')
+df_check_2020 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2020.xlsx')
+
+dem_2010 <- df_check_2010[,-1]
+dem_2020 <- df_check_2020[,-1]
+
+df_avg <- df_check_2010
+df_avg[,] <- NA
+df_avg$City <- NULL
+
+for (i in 1:ncol(dem_2010)) {
+  df_avg[,i] <- rowMeans(cbind(dem_2010[,i], dem_2020[,i]))
+  
+}
+
+df_avg <- cbind(df_check_2010$City, df_avg)
+colnames(df_avg)[1] <- 'City'
+
+# Reformatting cities
+for (i in 1:length(df_avg$City)) {
+  df_avg$City[i] <- substr(df_avg$City[i], 1, unlist(gregexpr(',', df_avg$City[i]))[1] - 1)
+}
+
+# Standardizing race acronyms
+colnames(df_avg)[colnames(df_avg) == 'NA'] <- 'AE'
+colnames(df_avg)[colnames(df_avg) == 'NH'] <- 'Not Hispanic'
+colnames(df_avg)[colnames(df_avg) == 'PI'] <- 'NH'
+```
+
+# Pre-processing
+```{r}
+total_df_copy <- total_df
+total_df_copy$cRace[total_df$cRace == 'OT/UNK' | total_df$cRace == 'UNK'] <- 'OT'
+race_acrs <- c('AA', 'AS', 'AE', 'CA', 'NH', 'MR', 'OT')
+city_vec <- df_avg$City
+```
+
+# Variables to loop through
+```{r}
+diseases <- c('CS', 'SZSAFD')
+col_pal <- c('#F8766D', '#7CAE00')
+pch_codes <- c(7,9)
+```
+
+# Regression Results
+
+## BSNIP + COGS2 + GPC
+```{r}
+studies_bcg <- c('BSNIP1', 'BSNIP2', 'GPC', 'COGS2')
+```
+
+### AA
+```{r}
+
+## Note: using log(Total City Population) 
+
+r_squared_vec <- rep(0, 2)
+
+for (i in 1:length(diseases)) {
+  aa_dis <- race_cities_plot_data2(df_avg, total_df_copy, disease = diseases[i], study = studies_bcg, race_acr = 'AA')
+  
+  if (i == 1) {
+    plot(log(aa_dis[[4]]), aa_dis[[1]], 
+     main = 'BSNIP+COGS2+GPC: Proportion Differences for AA',
+     xlab = 'log(Total City Population)',
+     ylab = 'Proportion Difference (Observed - Census Average)',
+     ylim = c(min(aa_dis[[1]] - 0.05), max(aa_dis[[1]] + 0.05)),
+     col = col_pal[i],
+     pch = pch_codes[i])
+  } else {
+    points(log(aa_dis[[4]]), aa_dis[[1]], col = col_pal[i], pch = pch_codes[i])
+  }
+  
+  lm_res <- lm(aa_dis[[1]] ~ log(aa_dis[[4]]) - 1)
+  r_squared_vec[i] <- summary(lm_res)$r.squared
+  
+  abline(lm_res, col = col_pal[i], lwd = 1.5)
+  
+}
+
+legend('topleft', 
+       legend = paste(diseases, ', R-sq = ', round(r_squared_vec, 3), sep = ''), 
+       col = col_pal, 
+       pch = pch_codes,
+       cex = 0.7)
+
+```
+
+### AS
+```{r}
+## Note: using log(Total City Population)
+
+r_squared_vec <- rep(0, 2)
+
+for (i in 1:length(diseases)) {
+  as_dis <- race_cities_plot_data2(df_avg, total_df_copy, disease = diseases[i], study = studies_bcg, race_acr = 'AS')
+  
+  if (i == 1) {
+    plot(log(as_dis[[4]]), as_dis[[1]], 
+     main = 'BSNIP+COGS2+GPC: Proportion Differences for AS',
+     xlab = 'log(Total City Population)',
+     ylab = 'Proportion Difference (Observed - Census Average)',
+     ylim = c(min(as_dis[[1]] - 0.05), max(as_dis[[1]] + 0.05)),
+     col = col_pal[i],
+     pch = pch_codes[i])
+  } else {
+    points(log(as_dis[[4]]), as_dis[[1]], col = col_pal[i], pch = pch_codes[i])
+  }
+  
+  lm_res <- lm(as_dis[[1]] ~ log(as_dis[[4]]) - 1)
+  r_squared_vec[i] <- summary(lm_res)$r.squared
+  
+  abline(lm_res, col = col_pal[i], lwd = 1.5)
+  
+}
+
+legend('topleft', 
+       legend = paste(diseases, ', R-sq = ', round(r_squared_vec, 3), sep = ''), 
+       col = col_pal, 
+       pch = pch_codes,
+       cex = 0.7)
+```
+
+### CA
+```{r}
+## Note: using log(Total City Population)
+
+r_squared_vec <- rep(0, 2)
+
+for (i in 1:length(diseases)) {
+  ca_dis <- race_cities_plot_data2(df_avg, total_df_copy, disease = diseases[i], study = studies_bcg, race_acr = 'CA')
+  
+  if (i == 1) {
+    plot(log(ca_dis[[4]]), ca_dis[[1]], 
+     main = 'BSNIP+COGS2+GPC: Proportion Differences for CA',
+     xlab = 'log(Total City Population)',
+     ylab = 'Proportion Difference (Observed - Census Average)',
+     ylim = c(min(ca_dis[[1]] - 0.05), max(ca_dis[[1]] + 0.05)),
+     col = col_pal[i],
+     pch = pch_codes[i])
+  } else {
+    points(log(ca_dis[[4]]), ca_dis[[1]], col = col_pal[i], pch = pch_codes[i])
+  }
+  
+  lm_res <- lm(ca_dis[[1]] ~ log(ca_dis[[4]]) - 1)
+  r_squared_vec[i] <- summary(lm_res)$r.squared
+  
+  abline(lm_res, col = col_pal[i], lwd = 1.5)
+  
+}
+
+legend('topleft', 
+       legend = paste(diseases, ', R-sq = ', round(r_squared_vec, 3), sep = ''), 
+       col = col_pal, 
+       pch = pch_codes,
+       cex = 0.7)
+```
+
+## COGS2 + GPC
+```{r}
+studies_cg <- c('COGS2', 'GPC')
+```
+
+### AA
+```{r}
+
+## Note: using log(Total City Population)
+
+r_squared_vec <- rep(0, 2)
+
+for (i in 1:length(diseases)) {
+  aa_dis <- race_cities_plot_data2(df_avg, total_df_copy, disease = diseases[i], study = studies_cg, race_acr = 'AA')
+  
+  if (i == 1) {
+    plot(log(aa_dis[[4]]), aa_dis[[1]], 
+     main = 'COGS2+GPC: Proportion Differences for AA',
+     xlab = 'log(Total Population)',
+     ylab = 'Proportion Difference (Observed - Census Average)',
+     ylim = c(min(aa_dis[[1]] - 0.05), max(aa_dis[[1]] + 0.05)),
+     col = col_pal[i],
+     pch = pch_codes[i])
+  } else {
+    points(log(aa_dis[[4]]), aa_dis[[1]], col = col_pal[i], pch = pch_codes[i])
+  }
+  
+  lm_res <- lm(aa_dis[[1]] ~ log(aa_dis[[4]]) - 1)
+  r_squared_vec[i] <- summary(lm_res)$r.squared
+  
+  abline(lm_res, col = col_pal[i], lwd = 1.5)
+  
+}
+
+legend('topleft', 
+       legend = paste(diseases, ', R-sq = ', round(r_squared_vec, 3), sep = ''), 
+       col = col_pal, 
+       pch = pch_codes,
+       cex = 0.7)
+
+```
+
+### AS
+```{r}
+## Note: using log(Total City Population) 
+
+r_squared_vec <- rep(0, 2)
+
+for (i in 1:length(diseases)) {
+  as_dis <- race_cities_plot_data2(df_avg, total_df_copy, disease = diseases[i], study = studies_cg, race_acr = 'AS')
+  
+  if (i == 1) {
+    plot(log(as_dis[[4]]), as_dis[[1]], 
+     main = 'COGS2+GPC: Proportion Differences for AS',
+     xlab = 'log(Total City Population)',
+     ylab = 'Proportion Difference (Observed - Census Average)',
+     ylim = c(min(as_dis[[1]] - 0.05), max(as_dis[[1]] + 0.05)),
+     col = col_pal[i],
+     pch = pch_codes[i])
+  } else {
+    points(log(as_dis[[4]]), as_dis[[1]], col = col_pal[i], pch = pch_codes[i])
+  }
+  
+  lm_res <- lm(as_dis[[1]] ~ log(as_dis[[4]]) - 1)
+  r_squared_vec[i] <- summary(lm_res)$r.squared
+  
+  abline(lm_res, col = col_pal[i], lwd = 1.5)
+  
+}
+
+legend('topleft', 
+       legend = paste(diseases, ', R-sq = ', round(r_squared_vec, 3), sep = ''), 
+       col = col_pal, 
+       pch = pch_codes,
+       cex = 0.7)
+```
+
+### CA
+```{r}
+## Note: using log(Total City Population) 
+
+r_squared_vec <- rep(0, 2)
+
+for (i in 1:length(diseases)) {
+  ca_dis <- race_cities_plot_data2(df_avg, total_df_copy, disease = diseases[i], study = studies_cg, race_acr = 'CA')
+  
+  if (i == 1) {
+    plot(log(ca_dis[[4]]), ca_dis[[1]], 
+     main = 'COGS2+GPC: Proportion Differences for CA',
+     xlab = 'log(Total City Population)',
+     ylab = 'Proportion Difference (Observed - Census Average)',
+     ylim = c(min(ca_dis[[1]] - 0.05), max(ca_dis[[1]] + 0.05)),
+     col = col_pal[i],
+     pch = pch_codes[i])
+  } else {
+    points(log(ca_dis[[4]]), ca_dis[[1]], col = col_pal[i], pch = pch_codes[i])
+  }
+  
+  lm_res <- lm(ca_dis[[1]] ~ log(ca_dis[[4]]) - 1)
+  r_squared_vec[i] <- summary(lm_res)$r.squared
+  
+  abline(lm_res, col = col_pal[i], lwd = 1.5)
+  
+}
+
+legend('topleft', 
+       legend = paste(diseases, ', R-sq = ', round(r_squared_vec, 3), sep = ''), 
+       col = col_pal, 
+       pch = pch_codes,
+       cex = 0.7)
+```
+
+
+

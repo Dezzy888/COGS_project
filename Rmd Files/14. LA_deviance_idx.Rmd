@@ -1,0 +1,269 @@
+---
+title: "LA_deviance_idx"
+author: "Daniel Zoleikhaeian"
+date: "2023-02-17"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+setwd("C:/Users/danie/Documents/Joshi Lab Materials/3 Studies Dataset/Dataset Merge/012623")
+```
+
+## Average race counts in LA
+```{r}
+
+df_check_2010 <- read_xlsx('reproj_30_2010.xlsx')
+df_check_2020 <- read_xlsx('reproj_30_2020.xlsx')
+
+LA_2010 <- df_check_2010[which(df_check_2010$City == 'Los Angeles, CA'),]
+LA_2020 <- df_check_2020[which(df_check_2020$City == 'Los Angeles, CA'),]
+LA <- rbind(LA_2010, LA_2020)
+LA <- LA[,-1]
+# View(LA)
+
+
+LA_avg <- as.data.frame(sapply(LA, mean, margin = 2))
+# View(LA_avg)
+LA_avg$cRace <- rownames(LA_avg)
+rownames(LA_avg) <- NULL
+freq <- LA_avg[,1]
+LA_avg[,1] <- LA_avg[,2]
+LA_avg[,2] <- freq
+
+colnames(LA_avg) <- c('cRace', 'freq')
+# View(LA_avg)
+
+LA_avg_races <- LA_avg[1:7,]
+
+# Standardizing race acronyms
+LA_avg_races$cRace[LA_avg_races$cRace == 'NA'] <- 'AE'
+LA_avg_races$cRace[LA_avg_races$cRace == 'PI'] <- 'NH'
+LA_avg_races <- LA_avg_races[order(LA_avg_races$cRace), ]
+rownames(LA_avg_races) <- NULL
+LA_avg_races <- LA_avg_races[1:6, ]
+LA_avg_races$prop <- LA_avg_races$freq / sum(LA_avg_races$freq)
+```
+
+## Loading dataset
+```{r}
+
+df <- read.csv('bgc_merge_cDiag123_new.csv')
+
+# Omit other/unknown bc census data does not have this
+# Also omit blank diagnoses
+df_LA <- df[df$cLocationCity == 'Los Angeles' & df$cRace != 'UNK' & df$cRace != 'OT/UNK' & df$cDiagnosis4 != '' & df$cStudy == 'GPC', ]
+
+df_brd <- df_LA %>% 
+  dplyr::group_by(cRace, cDiagnosis4) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+df_SZSAFD <- df_brd[df_brd$cDiagnosis4 == 'SZSAFD',]
+df_BAD12 <- df_brd[df_brd$cDiagnosis4 == 'BAD12',]
+df_MDD <- df_brd[df_brd$cDiagnosis4 == 'MDD',]
+df_CS <- df_brd[df_brd$cDiagnosis4 == 'CS', ]
+
+df_list <- list(df_SZSAFD, df_BAD12, df_MDD, df_CS)
+names(df_list) <- c('SZSAFD', 'BAD12', 'MDD', 'CS')
+
+# Checking if all races are represented
+
+LA_races <- levels(factor(LA_avg_races$cRace))
+df_check_idx <- c()
+
+for (i in 1:length(df_list)) {
+  if(length(levels(factor(df_list[[i]]$cRace))) != length(LA_races)) {
+    df_check_idx[i] <- i
+  }
+}
+
+df_check_idx ## MDD does not have complete 
+levels(factor(df_MDD$cRace))
+LA_races # MDD missing NH
+
+df_list[['MDD']] <- rbind(df_list[['MDD']], data.frame(cRace = 'NH', cDiagnosis4 = 'MDD', total_count = 0))
+
+# Making proportions and adding census data
+for (i in 1:length(df_list)) {
+  df_list[[i]]$prop <- df_list[[i]]$total_count / sum(df_list[[i]]$total_count)
+  df_list[[i]]$Source <- rep('Observed', nrow(df_list[[i]]))
+  
+  df_cens <- data.frame(cRace = df_list[[i]]$cRace, 
+                        cDiagnosis4 = df_list[[i]]$cDiagnosis4,
+                        total_count = LA_avg_races$freq,
+                        prop = LA_avg_races$prop,
+                        Source = rep('Expected', nrow(LA_avg_races)))
+  df_list[[i]] <- rbind(df_list[[i]], df_cens)
+}
+
+# View(df_list[['SZSAFD']])
+
+
+```
+
+## ggplot overviews of proportions
+```{r}
+source_cols <- c("#808080", "#F8766D")
+szsafd <- ggplot(data = df_list[['SZSAFD']], aes(x = cRace, y = prop, fill = Source)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = source_cols) +
+  ggtitle('Proportions of Race for SZSAFD') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+szsafd
+
+bad12 <- ggplot(data = df_list[['BAD12']], aes(x = cRace, y = prop, fill = Source)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = source_cols) +
+  ggtitle('Proportions of Race for BAD12') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+bad12
+
+mdd <- ggplot(data = df_list[['MDD']], aes(x = cRace, y = prop, fill = Source)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = source_cols) +
+  ggtitle('Proportions of Race for MDD') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+mdd
+
+cs <- ggplot(data = df_list[['CS']], aes(x = cRace, y = prop, fill = Source)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = source_cols) +
+  ggtitle('Proportions of Race for Controls') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+cs
+```
+
+## Begin hypothesis testing
+
+### Simulation method
+```{r}
+
+msim <- function(df_obs) {
+  null_dist <- rep(LA_avg_races$cRace, round(LA_avg_races$freq,0))
+  results <- matrix(0,6,1000)
+
+  for (i in 1:1000) {
+    sam <- sample(null_dist, nrow(df_LA), replace = F)
+    race_sam <- as.data.frame(plyr::count(sam))
+    
+    not_represented <- c()
+  
+    for (race in LA_races) {
+      if (!is.element(race, race_sam$x))
+        not_represented <- c(not_represented, race)
+      else
+        next
+    }
+    
+    for (race in not_represented) {
+      race_sam <- rbind(race_sam, data.frame(x = race, freq = 0))
+    }
+    
+    race_sam <- race_sam[order(race_sam$x),]
+    rownames(race_sam) <- race_sam$x
+    race_sam$x <- NULL
+    
+    results[,i] <- race_sam$freq
+    results[,i] <- results[,i] / sum(results[,i])
+  }
+
+  sigs <- rep(NA, 6)
+  # two-tailed test with p-value = 0.05/6 = 0.008
+  # generate a 99.2% CI
+  # see if the observed value lies outside of this interval
+  lower_bounds <- c()
+  upper_bounds <- c()
+  
+  for (i in 1:nrow(df_obs)) {
+    row_res <- sort(results[i, ])
+    lower_bound <- row_res[4]
+    lower_bounds <- c(lower_bounds, lower_bound)
+    upper_bound <- row_res[996]
+    upper_bounds <- c(upper_bounds, upper_bound)
+    
+    
+    if (df_obs$prop[i] > upper_bound || df_obs$prop[i] < lower_bound) {
+      sigs[i] <- T
+    }
+    else {
+      sigs[i] <- F
+    }
+  }
+  
+  df_obs$lower <- lower_bounds
+  df_obs$upper <- upper_bounds
+  df_obs$Significance <- sigs
+  return(df_obs)
+}
+```
+
+### SZSAFD
+```{r}
+res_szsafd <- msim(df_list[['SZSAFD']][1:6,])
+View(res_szsafd)
+```
+
+### BAD12
+```{r}
+res_bad12 <- msim(df_list[['BAD12']][1:6,])
+View(res_bad12)
+```
+
+### MDD
+```{r}
+res_mdd <- msim(df_list[['MDD']][1:6,])
+View(res_mdd)
+```
+
+### CS
+```{r}
+res_cs <- msim(df_list[['CS']][1:6,])
+View(res_cs)
+```
+
+For all conditions, all races were significantly different from census suggestions (p < 0.008).
+
+
+## Difference index: sum of absolute differences in significantly different proportions
+```{r}
+df_list2 <- list(df_SZSAFD, df_BAD12, df_MDD, df_CS)
+names(df_list2) <- c('SZSAFD', 'BAD12', 'MDD', 'CS')
+df_list2[['MDD']] <- rbind(df_list2[['MDD']], data.frame(cRace = 'NH', cDiagnosis4 = 'MDD', total_count = 0))
+
+for (i in 1:length(df_list2)) {
+  df_list2[[i]]$prop <- df_list2[[i]]$total_count / sum(df_list2[[i]]$total_count)
+  df_list2[[i]]$exp_prop <- LA_avg_races$prop
+  df_list2[[i]]$absdifs <- abs(df_list2[[i]]$prop - df_list2[[i]]$exp_prop)
+}
+```
+
+### SZSAFD, BAD12, MDD, and CS
+```{r}
+dif_idxs <- rep(0, 4)
+res_list <- list(res_szsafd, res_bad12, res_mdd, res_cs)
+names(dif_idxs) <- names(df_list2)
+for (i in 1:length(df_list2)) {
+  difs_to_sum <- df_list2[[i]]$absdifs[res_list[[i]]$Significance]
+  dif_idxs[i] <- sum(difs_to_sum)
+}
+dif_idxs
+
+```

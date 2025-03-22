@@ -1,0 +1,312 @@
+---
+title: "56. COGS Linear Regression"
+author: "Daniel Zoleikhaeian"
+date: "2023-08-23"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# loading dataset and libraries
+```{r}
+library(car)
+library(readxl)
+library(ggplot2)
+library(GGally)
+library(splines)
+library(plyr)
+library(effects)
+df <- read_xlsx('C:/Users/danie/Documents/Joshi Lab Materials/3 Studies Dataset/Dataset Merge/COGS_data.xlsx')
+
+colnames(df)
+col_sub <- c('SEX', 'GROUP', 'RACE','AGE','ETHNICITY','EDU_SELF','MMN135_205')
+
+df_sub <- df[, col_sub]
+head(df_sub)
+```
+
+# Sample linear regression on EDU_SELF
+
+## Checking missing data and assumptions
+```{r}
+# checking for missing data
+sum(is.na(df_sub$EDU_SELF)) # only 1/2477 subjects don't have EDU_SELF
+sum(complete.cases(df_sub[, -7])) # 2476/2477 have complete data
+
+# getting rid of that one individual
+df_self <- df_sub[complete.cases(df_sub[, -7]), -7]
+
+# pairs plot of data to check normality and correlations
+ggpairs(df_self)
+# no strong correlations among the predictors
+# continuous variables are roughly normally distributed
+```
+
+## Checking the levels on the factorized variables
+These are ethnicity, race, sex, group
+
+Race encodings:
+1 = 'NH'
+2 = 'AS'
+3 = 'PI'
+4 = 'AA'
+5 = 'CA'
+6 = 'MR'
+7 = 'UNK'
+
+```{r}
+unique(df_self$ETHNICITY) # 2 or 1
+unique(df_self$RACE) # 1 thru 7 
+unique(df_self$GROUP) # 1 or 2 --> 1 is control, 2 is SZ
+unique(df_self$SEX) # M or F
+
+dict_transform <- function(keys, values, vec) {
+  for (i in 1:length(keys)) {
+    vec[vec == keys[i]] <- values[i]
+  }
+  return (vec)
+}
+
+# transforming the categorical variables by a dictionary
+df_self$ETHNICITY2 <- factor(dict_transform(c(1,2), c('Hispanic', 'NotHispanic'), df_self$ETHNICITY) )
+df_self$RACE2 <- factor(dict_transform(1:7, c('NH','AS','PI','AA','CA','MR','UNK'), df_self$RACE))
+df_self$GROUP2 <- factor(dict_transform(c(1,2), c('CS', 'SZSAFD'), df_self$GROUP))
+
+# releveling
+df_self$ETHNICITY2 <- relevel(df_self$ETHNICITY2, ref = 'NotHispanic')
+df_self$RACE2 <- relevel(df_self$RACE2, ref = 'AA')
+df_self$GROUP2 <- relevel(df_self$GROUP2, ref = 'CS')
+df_self$SEX <- relevel(factor(df_self$SEX), ref = 'F') # females are the reference
+```
+
+## Performing the Regression
+```{r}
+edu_lr <- lm(EDU_SELF ~ SEX + RACE2 + ETHNICITY2 + GROUP2 + AGE, data = df_self)
+
+# checking fit
+plot(edu_lr, 1) # errors have mean 0; suspected high variance in middle than in end
+plot(edu_lr, 2) # residuals are mostly normally distributed
+plot(edu_lr, 4) # a few high-leverage points
+
+# checking for curvature and added complexity
+residualPlots(edu_lr) # p = 0.048, some added complexity required, but no evidence for quadratic term on Age (p = 0.77)
+
+## attempt: Diagnosis x Sex
+edu_lr2 <- lm(EDU_SELF ~ SEX * GROUP2 + RACE2 + ETHNICITY2 + AGE, data = df_self)
+
+residualPlots(edu_lr2) # p = 0.1842, no added complexity required
+
+# checking non-constant variance
+ncvTest(edu_lr2) # p = 0.10, so there is no evidence of ncv
+
+# verifying ncv by looking at residuals
+plot(edu_lr2, 1) # fairly uniform, but still a little suspicious
+
+
+# estimating the weights to address NCV
+plot((residuals(edu_lr2))^2 ~ fitted(edu_lr2), data = df_self,
+     main = 'Estimating Weights')
+
+## looks like a 2nd degree polynomial would estimate the variance
+res_mod <- lm(((residuals(edu_lr2))^2) ~ poly(fitted(edu_lr2), degree = 3, raw = TRUE)) # one extra degree to be safe
+lines(fitted(edu_lr2), predict(res_mod), col = 'blue')
+summary(res_mod)
+wts <- 1/(predict(res_mod))
+
+wls_edu_lr <- lm(EDU_SELF ~ SEX * GROUP2 + RACE2 + ETHNICITY2 + AGE, data = df_self, weights = wts)
+ncvTest(wls_edu_lr) # p = 0.995 non-constant variance addressed
+
+# checking results
+summary(wls_edu_lr)
+
+# comparing results to before
+summary(edu_lr2) # not much changed
+```
+
+Result Highlights:
+* All races except NH and PI had significantly higher self edu than AA
+* Hispanics had significantly lower self edu compared to non-Hispanics
+* SZSAFD group had significantly lower self edu compared to CS
+* Male SZSAFD had significantly higher self edu compared to female CS
+
+# Same analysis for MMN135-205
+```{r}
+# counting up the missing data
+sum(is.na(df_sub$MMN135_205)) # 849/2477 subjects don't have MMN135_205
+nrow(df_sub)
+
+# just getting rid of the education column
+df_MMN <- df_sub[,-6]
+colnames(df_MMN)
+
+# omitting missing data for preliminary analysis
+df_MMN <- df_MMN[complete.cases(df_MMN),] # 1628, as expected 
+
+# transforming the categorical variables by a dictionary
+df_MMN$ETHNICITY2 <- factor(dict_transform(c(1,2), c('Hispanic', 'NotHispanic'), df_MMN$ETHNICITY) )
+df_MMN$RACE2 <- factor(dict_transform(1:7, c('NH','AS','PI','AA','CA','MR','UNK'), df_MMN$RACE))
+df_MMN$GROUP2 <- factor(dict_transform(c(1,2), c('CS', 'SZSAFD'), df_MMN$GROUP))
+
+# releveling
+df_MMN$ETHNICITY2 <- relevel(df_MMN$ETHNICITY2, ref = 'NotHispanic')
+df_MMN$RACE2 <- relevel(df_MMN$RACE2, ref = 'AA')
+df_MMN$GROUP2 <- relevel(df_MMN$GROUP2, ref = 'CS')
+
+# checking distributions
+
+colnames(df_MMN)
+ggpairs(df_MMN[, c('AGE','MMN135_205')])# Age is slightly bimodal, MMN is a little left skewed, but should be fine
+
+```
+
+## Performing the regression
+```{r}
+mmn_lr <- lm(MMN135_205 ~ SEX + RACE2 + ETHNICITY2 + GROUP2 + AGE, data = df_MMN)
+
+# checking fit
+plot(mmn_lr, 1) # errors have mean; variance looks mostly uniform, except at beginning; no obvious curvature
+plot(mmn_lr, 2) # residuals are mostly normally distributed but deviate a lot at the tails
+plot(mmn_lr, 4) # very few influential points
+
+# checking for curvature
+residualPlots(mmn_lr) # p = 0.002 suggests adding higher complexity terms (interactions, but no specific addition of quadratic term)
+
+residualPlot(mmn_lr) # curvature for low and high fitted values
+
+avPlots(mmn_lr)
+
+mmn_lr_itx <- lm(MMN135_205 ~ AGE*RACE2 + ETHNICITY2 + GROUP2 + SEX, data = df_MMN)
+
+plot(Effect(c("RACE2", "AGE"), mmn_lr_itx, default.levels=100),
+     rug=FALSE, grid=TRUE, multiline=TRUE, x.var = "AGE")
+
+residualPlots(mmn_lr_itx)
+
+mmn_lr_itx2 <- lm(MMN135_205 ~ RACE2 + ETHNICITY2 + SEX*AGE + GROUP2, data = df_MMN)
+
+plot(Effect(c("SEX", "AGE"), mmn_lr_itx2, default.levels=100),
+     rug=FALSE, grid=TRUE, multiline=TRUE, x.var = "AGE")
+
+residualPlots(mmn_lr_itx2)
+
+mmn_lr_itx3 <- lm(MMN135_205 ~ RACE2 + ETHNICITY2 + SEX + AGE * GROUP2, data = df_MMN)
+
+plot(Effect(c("GROUP2", "AGE"), mmn_lr_itx2, default.levels=100),
+     rug=FALSE, grid=TRUE, multiline=TRUE, x.var = "AGE") # lines are parallel, so no group x age effect
+
+mmn_lr_itxc <- lm(MMN135_205 ~ RACE2 + ETHNICITY2 + SEX + AGE + GROUP2 + SEX:AGE + RACE2:AGE, data = df_MMN)
+
+residualPlots(mmn_lr_itxc) # p = .247; complexity resolved by adding 2nd degree interactions
+
+# checking non-constant variance
+ncvTest(mmn_lr_itxc) # p << 0.05, so there is evidence of ncv
+
+# estimating the weights to address NCV
+plot((residuals(mmn_lr_itxc))^2 ~ fitted(mmn_lr_itxc), data = df_MMN,
+     main = 'Estimating Weights') # high variance towards the early-middle
+
+## looks like a 2nd degree polynomial would estimate the weights
+res_mod_mn <- lm(((residuals(mmn_lr_itxc))^2) ~ poly(fitted(mmn_lr_itxc), degree = 2, raw = TRUE)) # one extra dergee for good luck
+lines(fitted(mmn_lr_itxc), predict(res_mod_mn), col = 'blue')
+summary(res_mod_mn)
+wts <- 1/(predict(res_mod_mn))
+
+wls_mmn <- lm(MMN135_205 ~ RACE2 + ETHNICITY2 + SEX + AGE + GROUP2 + SEX:AGE + RACE2:AGE, data = df_MMN, weights = wts)
+ncvTest(wls_mmn) # p = 0.908 non-constant variance addressed
+
+# checking results
+summary(wls_mmn)
+```
+
+Main findings:
+* Race modulates the slope on Age; varying levels of significantly increased MMN
+* Higher age = higher MMN
+* Higher overall MMN for SZSASFD and Males
+
+
+## Trying maximal model
+```{r}
+## attempt: AGE x SEX x Diagnosis x RACE
+mmn_lr4 <- lm(MMN135_205 ~ AGE * SEX * GROUP2 * RACE2 * ETHNICITY2, data = df_MMN)
+summary(mmn_lr4)
+
+residualPlots(mmn_lr4) # p = 0.2974, so no added complexity required
+
+# ISSUE: this model is not very interpretable, so use the 2nd degree interaction model
+
+# checking non-constant variance
+ncvTest(mmn_lr4) # p << 0.05, so there is evidence of ncv
+
+# estimating the weights to address NCV
+plot((residuals(mmn_lr4))^2 ~ fitted(mmn_lr4), data = df_MMN,
+     main = 'Estimating Weights') # high variance towards the early-middle
+
+## looks like a 2nd degree polynomial would estimate the weights
+res_mod_mn <- lm(((residuals(mmn_lr4))^2) ~ poly(fitted(mmn_lr4), degree = 3, raw = TRUE)) # one extra dergee for good luck
+lines(fitted(mmn_lr4), predict(res_mod_mn), col = 'blue')
+summary(res_mod_mn)
+wts <- 1/(predict(res_mod_mn))
+
+wls_mmn2 <- lm(MMN135_205 ~ AGE * SEX * GROUP2 * RACE2 +  ETHNICITY2, data = df_MMN, weights = wts)
+ncvTest(wls_mmn2) # p = 0.934 non-constant variance addressed
+
+# checking results
+summary(wls_mmn2)
+```
+
+## Comparing Maximal Model to 2nd degree interaction model
+```{r}
+# 2nd degree interaction model
+summary(wls_mmn)$adj.r.squared # 0.2938182
+
+# maximal model
+summary(wls_mmn2)$adj.r.squared # 0.2949332
+```
+
+# Checking if the MMN data is not Missing at Random
+```{r}
+df_MMN2 <- df_sub[,-6]
+colnames(df_MMN2)
+
+df_MMN2$cmpl <- ifelse(is.na(df_MMN2$MMN135_205), 1, 0) # 1 = missing, 0 = complete
+
+# applying logistic regression: goal would be to see no trends
+mar_check <- glm(cmpl ~ SEX + factor(RACE) + factor(ETHNICITY) + factor(GROUP) + AGE, data = df_MMN2, family = 'binomial')
+
+# checking the fit
+library(glmtoolbox)
+hltest(mar_check)
+# suggests complexity is not sufficient (p = 0.12 < 0.20 cutoff)
+
+# attempt 2: using same formula lm
+mar_check2 <- glm(cmpl ~ factor(RACE) + factor(ETHNICITY) + factor(SEX) + AGE + factor(GROUP) + factor(SEX):AGE + factor(RACE):AGE, data = df_MMN2, family = 'binomial')
+hltest(mar_check2) # p = 0.204; no additional complexity required
+
+summary(mar_check2)
+library(rje)
+exp(coef(mar_check2))
+exp(confint(mar_check2))
+
+Anova(mar_check2)
+
+# last sanity check
+df_MMN_inc <- df_MMN2[is.na(df_MMN2$MMN135_205),]
+cts <- plyr::count(df_MMN_inc, 'GROUP')
+cts$prop <- cts$freq / sum(cts$freq)
+cts
+
+prop.test(310, 310+539, p = 0.5) # p = 5.079e-15; not a 50-50 split between CS and SZSAFD among those who are missing MMN
+```
+
+Main findings:
+* Being in the SZ group has higher odds (1.47; 95% CI: 1.22 to 1.77) of not having an MMN recorded. Controlling for Age, Race, Ethnicity, and Sex, the odds of having a missing MMN are 50% higher for SZ patients. 
+* Moderate suggestion that older males have lower odds of dropout than older females
+* No significant increases in the odds of missing MMN for other variables
+
+Conclusion:
+* Data is not missing at random
+* SZSAFD subjects have significantly higher chance of having a missing MMN

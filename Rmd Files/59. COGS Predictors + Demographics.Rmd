@@ -1,0 +1,448 @@
+---
+title: "59. COGS Demographics among predictors"
+author: "Daniel Zoleikhaeian"
+date: "2023-09-15"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+```{r}
+# loading dataset and libraries
+library(car)
+library(readxl)
+library(ggplot2)
+library(GGally)
+library(splines)
+library(dplyr)
+library(plyr)
+library(effects)
+
+# helper function
+dict_transform <- function(keys, values, vec) {
+  for (i in 1:length(keys)) {
+    vec[vec == keys[i]] <- values[i]
+  }
+  return (vec)
+}
+
+df <- read_xlsx('C:/Users/danie/Documents/Joshi Lab Materials/3 Studies Dataset/Dataset Merge/COGS_data.xlsx')
+
+sort(colnames(df))
+col_sub <- c('SEX', 'GROUP', 'RACE','AGE','ETHNICITY','EDU_SELF', 'EDU_MOTHER', 'EDU_FATHER', 'AGE_ONSET', 'NUM_PSYCH_HOSP', 'GLOBAL_SANS', 'GLOBAL_SAPS', 'GAF_LAST_MOS', 'MMN135_205')
+
+df_sub <- df[, col_sub]
+head(df_sub)
+
+nrow(df_sub) # 2477 observations
+
+colnames(df_sub)
+sum(complete.cases(df_sub)) # 658 observations are complete
+
+sum(complete.cases(df_sub[, 1:5])) # demographic variables are complete; 2477 observations
+
+# Re-encoding the demographic variables
+df_sub$ETHNICITY2 <- factor(dict_transform(c(1,2), c('Yes', 'No'), df_sub$ETHNICITY) )
+df_sub$RACE2 <- factor(dict_transform(1:7, c('AE','AS','NH','AA','CA','MR','UNK'), df_sub$RACE))
+df_sub$GROUP2 <- factor(dict_transform(c(1,2), c('CS', 'SZSAFD'), df_sub$GROUP))
+
+# releveling
+df_sub$ETHNICITY2 <- relevel(df_sub$ETHNICITY2, ref = 'No')
+df_sub$RACE2 <- relevel(df_sub$RACE2, ref = 'AA')
+df_sub$GROUP2 <- relevel(df_sub$GROUP2, ref = 'CS')
+```
+
+## Step 1: Looking to see if there are any race, gender, ethnicity differences in the predictors
+* Method: use multiple linear regression
+* Algorithm:
+
+1) Subset the data by what is missing from the predictor of interest that will be used as the outcome variable
+
+2) Loop through each predictor of interest, using the demographic factors (Race, Gender, Ethnicity, Age) as the predictors in the multiple linear regression
+
+3) Store results in a list of summaries
+
+```{r}
+library(broom)
+
+# vectorized isTRUE function
+is.true <- Vectorize(isTRUE)
+
+outcomes <- c('EDU_SELF', 'EDU_MOTHER', 'EDU_FATHER', 'AGE_ONSET', 'NUM_PSYCH_HOSP', 'GLOBAL_SANS', 'GLOBAL_SAPS', 'GAF_LAST_MOS')
+
+# NOTE: CS did not have a GLOBAL SAPS or GLOBAL SANS; only SZSAFD did
+# Question: why is this not the case for NUM_PSYCH_HOSP or AGE_ONSET?
+
+unique(df_sub[complete.cases(df_sub[,colnames(df_sub) == outcomes[6:7]]),]$GROUP2)
+unique(df_sub[complete.cases(df_sub[,colnames(df_sub) == 'AGE_ONSET']),]$GROUP2)
+unique(df_sub[complete.cases(df_sub[,colnames(df_sub) == 'NUM_PSYCH_HOSP']),]$GROUP2)
+
+plyr::count(df_sub[complete.cases(df_sub[,colnames(df_sub) == 'AGE_ONSET']),]$GROUP2) # only 3 CS have this
+plyr::count(df_sub[complete.cases(df_sub[,colnames(df_sub) == 'NUM_PSYCH_HOSP']),]$GROUP2) # only 3 CS have this. Were they recovered?
+
+View(df[complete.cases(df[, colnames(df) %in% c('AGE_ONSET', 'NUM_PSYCH_HOSP')]) & df$GROUP == 1, ]) # These are the same 3 subjects
+
+
+sum_collection <- vector(mode = 'list', length = length(outcomes))
+aov_collection <- vector(mode = 'list', length = length(outcomes))
+
+for (i in 1:length(outcomes)) {
+  
+  if (outcomes[i] %in% c('GLOBAL_SANS', 'GLOBAL_SAPS')) {
+    reg_form <- paste(outcomes[i], '~', 'AGE + SEX + ETHNICITY2 + RACE2')
+  } else {
+    reg_form <- paste(outcomes[i], '~', 'AGE + GROUP2 + SEX + ETHNICITY2 + RACE2')
+  }
+  
+  lin_mod <- lm(reg_form, data = df_sub[complete.cases(df_sub[,colnames(df_sub) == outcomes[i]]),])
+  sum_collection[[i]] <- summary(lin_mod)
+  aov_collection[[i]] <- broom::tidy(Anova(lin_mod))
+}
+
+names(sum_collection) <- outcomes
+names(aov_collection) <- outcomes
+
+sum_collection
+aov_collection
+
+aov_collection[[1]]$p.value < 0.05
+
+is.true(aov_collection[[1]]$p.value < 0.05)
+
+df_summary <- data.frame(Outcome = outcomes,
+                         Sig_pred = rep('', length(outcomes)),
+                         Adj.R.2 = rep(0,length(outcomes)))
+names(sum_collection[[1]])
+
+for (i in 1:length(outcomes)) {
+   df_summary$Sig_pred[i] <-paste( aov_collection[[i]]$term[is.true(aov_collection[[i]]$p.value < 0.05)], collapse = ', ')
+   df_summary$Adj.R.2[i] <- sum_collection[[i]]$adj.r.squared
+}
+
+View(df_summary)
+```
+
+## Step 2: Using predictors for MMN
+
+NOTE: 
+* Splitting up analysis by CS and SZSAFD since GLOBAL SANS and GLOBAL SAPS do not apply for CS
+* NOTE: heavy data reduction multidimensional data
+
+### Analysis for CS
+
+NOTES:
+* Excluding the variables that should pertain to only SZSAFD
+
+#### Naive model
+```{r}
+df_cs <- df_sub[df_sub$GROUP2 == 'CS', c('AGE', 'SEX', 'ETHNICITY2', 'RACE2', 'EDU_SELF', 'EDU_MOTHER', 'EDU_FATHER', 'GAF_LAST_MOS', 'MMN135_205')]
+sum(df$GROUP == 1) # 1062 observations originally
+
+df_cs <- df_cs[complete.cases(df_cs),]
+nrow(df_cs) # 702 observations are complete for these variables
+
+naive_mod_cs <- lm(MMN135_205 ~ AGE + SEX + ETHNICITY2 + RACE2 + EDU_SELF + EDU_MOTHER + EDU_FATHER + GAF_LAST_MOS, data = df_cs)
+
+summary(naive_mod_cs)
+summary(naive_mod_cs)$adj.r.squared
+plot(naive_mod_cs, 1) 
+
+# some moderate curvature, but does not look too bad
+residualPlots(naive_mod_cs) # suggests adding quadratic term to age
+
+# less variance for higher fitted values
+ncvTest(naive_mod_cs) # non-constant variance confirmed
+
+plot(naive_mod_cs, 2)
+# high normality deviation at the tails
+
+plot(naive_mod_cs, 4) # no Cook's distance above 0.5, so no influential points
+
+outlierTest(naive_mod_cs) # 546 and 162 are outliers, but not influential
+
+```
+
+#### Checking continuous variables
+```{r}
+colnames(df_cs) # columns 2 through 4 are non-numeric
+
+# pairs plot of the continuous variables
+ggpairs(df_cs[, -1*(2:4)])
+
+summary(df_cs[, -1*(2:4)])
+```
+
+Notable characteristics:
+* Age bimodality
+- could consider binarizing Age to capture the two "humps"
+* Left skew for all continuous variables, include MMN
+* Suggested transformations:
+- square root transformations
+
+```{r}
+hist(df_cs$AGE) # try 18-35 and 36 + 
+df_cs$plus36 <- ifelse(df_cs$AGE >= 36, 'Yes', 'No')
+
+df_cs$tEDU_FATHER <- sqrt(25 - df_cs$EDU_FATHER)
+df_cs$tEDU_MOTHER <- sqrt(25 - df_cs$EDU_MOTHER)
+df_cs$tEDU_SELF <- sqrt(25 - df_cs$EDU_SELF)
+df_cs$tGAF_LAST_MOS <- sqrt(125 - df_cs$GAF_LAST_MOS)
+df_cs$tMMN135_205 <- sqrt(2 - df_cs$MMN135_205)
+
+# re-checking the distributions
+ggpairs(df_cs[, (ncol(df_cs) - 5 + 1):ncol(df_cs)]) # transformations seem successfull
+
+cs_mod2 <- lm(tMMN135_205 ~ plus36 + SEX + ETHNICITY2 + RACE2 + tEDU_SELF + tEDU_MOTHER + tEDU_FATHER + tGAF_LAST_MOS, data = df_cs)
+
+plot(cs_mod2, c(1, 2, 4))
+
+# curvature still present
+# normality assumptions addressed
+# Outliers have less influence here
+
+ncvTest(cs_mod2) # still ncv issue, but less severe
+residualPlots(cs_mod2) # evidence of more complex interactions needed
+
+plotlm <- stats:::plot.lm
+fix("plotlm") # editing the plot.lm function so ylim can be adjusted
+
+# comparing the residual plots from model 1 to model 2
+plotlm(naive_mod_cs, 1, ylim= c(-2, 2))
+plotlm(cs_mod2, 1,ylim= c(-2, 2)) # model 2 looks way better
+```
+
+#### Addressing NCV issue
+```{r}
+plot((residuals(cs_mod2))^2 ~ fitted(cs_mod2), data = df_cs,
+     main = 'Estimating Weights') # high variance towards the early-middle
+
+## looks like a 2nd degree polynomial would estimate the weights
+res_mod_cs <- lm(((residuals(cs_mod2))^2) ~ poly(fitted(cs_mod2), degree = 2, raw = TRUE)) # one extra dergee for good luck
+lines(fitted(cs_mod2), predict(res_mod_cs), col = 'blue')
+wts_cs <- 1/(predict(res_mod_cs))
+
+wls_cs2 <- lm(tMMN135_205 ~ plus36 + SEX + ETHNICITY2 + RACE2 + tEDU_SELF + tEDU_MOTHER + tEDU_FATHER + tGAF_LAST_MOS, data = df_cs, weights = wts_cs)
+ncvTest(wls_cs2) # ncv addressed
+
+# checking final model
+summary(wls_cs2)
+plot(wls_cs2, 1)
+plot(wls_cs2, 2)
+plot(wls_cs2, 4)
+```
+
+
+### Analysis for SZSAFD
+
+#### Naive model
+```{r}
+outcomes
+
+df_sz <- df_sub[df_sub$GROUP2 == 'SZSAFD', c('AGE', 'SEX', 'ETHNICITY2', 'RACE2', 'EDU_SELF', 'EDU_MOTHER', 'EDU_FATHER', 'GAF_LAST_MOS','AGE_ONSET', 'NUM_PSYCH_HOSP', 'GLOBAL_SANS', 'GLOBAL_SAPS', 'MMN135_205')]
+sum(df$GROUP == 2) # 1415 observations originally
+
+df_sz <- df_sz[complete.cases(df_sz),]
+nrow(df_sz) # 658 observations are complete for these variables
+
+naive_mod_sz <- lm(MMN135_205 ~ AGE + SEX + ETHNICITY2 + RACE2 + EDU_SELF + EDU_MOTHER + EDU_FATHER + AGE_ONSET + NUM_PSYCH_HOSP + GLOBAL_SANS + GLOBAL_SAPS + GAF_LAST_MOS, data = df_sz)
+
+summary(naive_mod_sz)
+summary(naive_mod_sz)$adj.r.squared
+plot(naive_mod_sz, 1) # basically no curvature
+
+residualPlots(naive_mod_sz) # suggests adding quadratic term to GLOBAL_SANS
+
+# less variance for higher fitted values
+ncvTest(naive_mod_sz) # non-constant variance confirmed
+
+plot(naive_mod_sz, 2)
+# not much normality deviation
+
+plot(naive_mod_sz, 4) # very low Cook's distance
+
+outlierTest(naive_mod_sz) # No outliers
+```
+
+#### Checking continuous variables
+```{r}
+colnames(df_sz) # columns 2 through 4 are non-numeric
+
+# pairs plot of the continuous variables
+ggpairs(df_sz[, -1*(2:4)])
+
+summary(df_sz[, -1*(2:4)])
+```
+
+Notable characteristics:
+* Age of Onset slightly right skewed
+* Num Psych Hospitalization right skewed
+* Correlations among:
+- Education variables
+- GAF + Global SANS/SAPS
+- Global SANS + SAPS
+* Low correlations everywhere else 
+* Suggested transformations for right skewed variables: 
+- log transform
+* Omit the variables with high correlations; only use one ro the other
+- Keep GLOBAL SAPS
+-- has highest correlation with MMN
+- Omit: GAF, EDU_MOTHER, EDU_FATHER
+
+```{r}
+hist(log(df_sz$AGE_ONSET))
+hist(log(df_sz$NUM_PSYCH_HOSP))
+# both approximately normal
+
+sz_mod2 <- lm(MMN135_205 ~ AGE + SEX + ETHNICITY2 + RACE2 + EDU_SELF + log(AGE_ONSET) + log(NUM_PSYCH_HOSP + 1) + GLOBAL_SAPS, data = df_sz) # adding 1 to make the log valid if NUM_PSYCH_HOSP = 0
+
+summary(sz_mod2)
+
+plot(sz_mod2, 1) # curvature still absent
+plot(naive_mod_sz, 1)
+plot(sz_mod2, 2)
+plot(naive_mod_sz, 2) # basically the same
+plot(sz_mod2, 4)
+plot(naive_mod_sz, 4) # naive mod has slightly better cook's distance
+
+
+ncvTest(sz_mod2) # still ncv issue, but less severe
+residualPlots(sz_mod2) # no evidence of more complex interactions
+
+plotlm <- stats:::plot.lm
+fix("plotlm") # editing the plot.lm function so ylim can be adjusted
+```
+
+#### Addressing NCV issue
+```{r}
+plot((residuals(sz_mod2))^2 ~ fitted(sz_mod2), data = df_sz,
+     main = 'Estimating Weights') # high variance towards the early-middle
+
+## looks like a 2nd degree polynomial would estimate the weights
+res_mod_sz <- lm(((residuals(sz_mod2))^2) ~ poly(fitted(sz_mod2), degree = 2, raw = TRUE)) 
+lines(fitted(sz_mod2), predict(res_mod_sz), col = 'blue')
+wts_sz <- 1/(predict(res_mod_sz))
+
+wls_sz2 <- lm(MMN135_205 ~ AGE + SEX + ETHNICITY2 + RACE2 + EDU_SELF + log(AGE_ONSET) + log(NUM_PSYCH_HOSP + 1) + GLOBAL_SAPS, data = df_sz, weights = wts_sz)
+ncvTest(wls_sz2) # ncv addressed
+
+# checking final model
+summary(wls_sz2)
+plot(wls_sz2, 1)
+plot(wls_cs2, 2)
+plot(wls_cs2, 4)
+
+summary(lm(MMN135_205 ~ AGE, data = df_sz)) # ~ 13.3% of the variance
+summary(lm(MMN135_205 ~ AGE, data = df_cs)) # ~ 12.6% of the variance
+```
+
+Conclusions
+* Variables are still not too informative towards MMN
+* Capture ~ 18% of the variance in both conditions
+* AGE alone is the most important variable for MMN
+
+### Checking the PENN variables
+```{r}
+Penn_cols <- 208:227
+penn_vars <- df[, Penn_cols]
+nrow(penn_vars) # 2477 initially
+
+# subsetting by complete cases
+penn_vars <- penn_vars[complete.cases(penn_vars), ]
+nrow(penn_vars) # 1994 remaining
+
+sapply(penn_vars, class) # all Penn variables are numeric
+
+X.pc <- prcomp(penn_vars, scale = TRUE)
+library(factoextra)
+fviz_eig(X.pc) # first principal component dominates
+summary(X.pc) # first principal component contains 37% of variance
+
+df_to_plot <- summary(X.pc)$importance
+View(df_to_plot)
+
+plot(1:20, df_to_plot['Cumulative Proportion', ], main = 'Cumulative Variance Explained by Dimension', ylab = 'Cumulative Variance Explained', xlab = 'Dimension')
+grid()
+
+# Perhaps use the variables from the first 5 PC's
+
+res.var <- get_pca_var(X.pc)
+res.var$contrib
+
+top5 <- res.var$contrib[, 1:5]
+
+top5
+dim(top5)
+
+# getting the names of the most contributing variables for the first 5 PCs
+penn_vars_red <- names(unlist(unname(apply(top5, 2, which.max, simplify = FALSE))))
+form_add <- paste(penn_vars_red, collapse = ' + ')
+form_add
+
+penn_reg_red <- paste('MMN135_205', '~', form_add)
+penn_reg_red
+
+
+# Possibly important Penn variables: 
+# PENN_STD_WRAT
+# PENN_CSMT
+# PENN_CWMEMA
+
+penn_mod <- lm(MMN135_205 ~ as.matrix(df[, Penn_cols]), data = df)
+
+summary(penn_mod)$adj.r.squared # R.squared = 0.210
+
+ggpairs(df[, penn_vars_red])
+# high correlation between PENN_CEMOT and PENN_CFMEMT
+
+penn_mod2 <- lm(penn_reg_red, data = df)
+summary(penn_mod2)$adj.r.squared # R.squared = 0.147
+
+library(caret)
+library(leaps)
+
+models <- regsubsets(MMN135_205~., data = df[, c('MMN135_205', penn_vars_red)], nvmax = 5)
+
+res.sum <- summary(models)
+data.frame(
+  Adj.R2 = which.max(res.sum$adjr2),
+  CP = which.min(res.sum$cp),
+  BIC = which.min(res.sum$bic)
+)
+
+res.sum # Use PENN_CEMOT, PENN_CATTA, PENN_CVMEMA, PENN_CMOTT
+
+
+length(Penn_cols) # 20 variables --> 4 variables
+```
+
+### Adding PENN variables to the models from before
+```{r}
+
+df_new <- cbind(df_sub, df[, Penn_cols])
+colnames(df_new)
+
+cs_naive_2 <- lm(MMN135_205 ~ AGE + SEX + ETHNICITY2 + RACE2 + EDU_SELF + EDU_MOTHER + EDU_FATHER + GAF_LAST_MOS + PENN_CVMEMA + PENN_CMOTT + PENN_CEMOT + PENN_CATTA, df_new[df_new$GROUP2 == 'CS', ])
+
+sz_naive_2 <- lm(MMN135_205 ~ AGE + SEX + ETHNICITY2 + RACE2 + EDU_SELF + EDU_MOTHER + EDU_FATHER + AGE_ONSET + NUM_PSYCH_HOSP + GLOBAL_SANS + GLOBAL_SAPS + GAF_LAST_MOS + PENN_CVMEMA + PENN_CMOTT + PENN_CEMOT + PENN_CATTA, df_new[df_new$GROUP2 == 'SZSAFD', ])
+
+summary(cs_naive_2)$adj.r.squared # 0.1956468
+summary(naive_mod_cs)$adj.r.squared # 0.1899399
+summary(sz_naive_2)$adj.r.squared # 0.1746225
+summary(naive_mod_sz)$adj.r.squared # 0.1770992
+
+Anova(cs_naive_2)
+Anova(sz_naive_2)
+```
+
+
+
+
+
+
+
+

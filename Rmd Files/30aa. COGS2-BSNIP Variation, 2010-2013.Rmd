@@ -1,0 +1,251 @@
+---
+title: "Variation in COGS2/BSNIP"
+author: "Daniel Zoleikhaeian"
+date: "2023-05-03"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+```
+
+# Census Data
+
+## Datasets
+```{r}
+dat_2010 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2010.xlsx')
+dat_2020 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2020.xlsx')
+
+dat_2010_races <- dat_2010[,2:8]
+dat_2020_races <- dat_2020[,2:8]
+
+rownames(dat_2010_races) <- dat_2010$City
+rownames(dat_2020_races) <- dat_2020$City
+#View(dat_2010_races)
+```
+
+## Making proportions
+```{r}
+
+# Making proportions
+prop_2010 <- as.data.frame(t(apply(dat_2010_races, MARGIN = 1, function(x) {x / sum(x)}, simplify = T)))
+
+# Making a city column
+prop_2010$City <- rownames(prop_2010)
+prop_2010 <- prop_2010[, c(ncol(prop_2010), 1:(ncol(prop_2010) - 1))]
+rownames(prop_2010) <- NULL
+
+# reformatting the City vector
+prop_2010$City <- lapply(prop_2010$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+# Adding a Year column
+prop_2010$Year <- rep(2010, nrow(prop_2010))
+
+prop_2020 <- as.data.frame(t(apply(dat_2020_races, MARGIN = 1, function(x) {x / sum(x)}, simplify = T)))
+
+prop_2020$City <- rownames(prop_2020)
+prop_2020 <- prop_2020[, c(ncol(prop_2020), 1:(ncol(prop_2020) - 1))]
+rownames(prop_2020) <- NULL
+
+prop_2020$City <- lapply(prop_2020$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+prop_2020$Year <- rep(2020, nrow(prop_2020))
+
+# stacking the dataframes on top of each other
+prop_2010_2020 <- rbind(prop_2010, prop_2020)
+
+# checking if the rows are equal
+nrow(prop_2010_2020) == (nrow(prop_2010) + nrow(prop_2020))
+
+# standardizing acronyms
+colnames(prop_2010_2020)[colnames(prop_2010_2020) == 'NA'] <- 'AE'
+colnames(prop_2010_2020)[colnames(prop_2010_2020) == 'PI'] <- 'NH'
+```
+
+## Making LM objects for AA within each cities in prop_2010_2020
+```{r}
+lm_objects <- vector("list", nrow(prop_2010))
+cities <- prop_2010$City
+for (i in 1:length(cities)) {
+  lm_obj <- lm(AA ~ Year, data = prop_2010_2020[unlist(prop_2010_2020$City) == cities[i], ])
+  lm_objects[[i]] <- lm_obj
+}
+
+unlist(prop_2010_2020$City)
+names(lm_objects) <- cities
+```
+
+## Calculating the 2010-2013 expected proportion based on LM results
+```{r}
+year_in <- mean(c(2010, 2013))
+year_exp_props <- rep(0, length(cities))
+for (i in 1:length(year_exp_props)) {
+  year_exp_props[i] <- predict(lm_objects[[i]], newdata = data.frame(Year = year_in))
+}
+
+names(year_exp_props) <- cities
+year_exp_props # expected proportion of AA for 2010-2013 chunk across all cities
+```
+
+# Loading Dataset
+```{r}
+us_data <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+us_data$cEnrollmentYear <- as.numeric(substr(us_data$cEnrollmentDateYear, 1,4))
+```
+
+# Data Subsets by Year Range
+```{r}
+bsnip1_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013 & us_data$cStudy == 'BSNIP1', ]
+cogs2_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013 & us_data$cStudy == 'COGS2', ]
+gpc_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013 & us_data$cStudy == 'GPC', ]
+
+# just checking bsnip2 between 2010-2013; should be empty
+bsnip2_1013 <- us_data[us_data$cEnrollmentYear %in% 2010:2013 & us_data$cStudy == 'BSNIP2', ] # 0 rows
+```
+
+# Getting Race Counts and Proportions
+```{r}
+# Race counts
+race_1013_gpc <- plyr::count(gpc_1013, c('cLocationCity', 'cRace'))
+race_1013_bsnip1 <- plyr::count(bsnip1_1013, c('cLocationCity', 'cRace'))
+race_1013_cogs2 <- plyr::count(cogs2_1013, c('cLocationCity', 'cRace'))
+
+city_reps_1013_gpc <- plyr::count(race_1013_gpc[,1:2], 'cLocationCity')
+city_reps_1013_bsnip1 <- plyr::count(race_1013_bsnip1[,1:2], 'cLocationCity')
+city_reps_1013_cogs2 <- plyr::count(race_1013_cogs2[,1:2], 'cLocationCity')
+
+city_1013_gpc <- plyr::count(gpc_1013, 'cLocationCity')
+city_1013_bsnip1 <- plyr::count(bsnip1_1013, 'cLocationCity')
+city_1013_cogs2 <- plyr::count(cogs2_1013, 'cLocationCity')
+
+tots_1013_gpc <- rep(city_1013_gpc$freq, city_reps_1013_gpc$freq)
+tots_1013_bsnip1 <- rep(city_1013_bsnip1$freq, city_reps_1013_bsnip1$freq)
+tots_1013_cogs2 <- rep(city_1013_cogs2$freq, city_reps_1013_cogs2$freq)
+
+
+race_1013_gpc$prop <- race_1013_gpc$freq / tots_1013_gpc
+race_1013_cogs2$prop <- race_1013_cogs2$freq / tots_1013_cogs2
+race_1013_bsnip1$prop <- race_1013_bsnip1$freq / tots_1013_bsnip1
+
+race_1013_gpc$Study <- rep('GPC', nrow(race_1013_gpc))
+race_1013_bsnip1$Study <- rep('BSNIP1', nrow(race_1013_bsnip1))
+race_1013_cogs2$Study <- rep('COGS2', nrow(race_1013_cogs2))
+
+race_total <- rbind(race_1013_gpc, race_1013_cogs2, race_1013_bsnip1)
+```
+
+# Plotting counts and proportions
+
+## Helper Function
+```{r}
+plot_Bar <- function(data_in, y_col, y_name, race_acr, fill_arg, yr_range) {
+  ggplot(data = data_in, aes_string(x = 'cLocationCity', y = y_col, fill = fill_arg)) +
+  geom_bar(stat = "identity", position='dodge') + 
+  ggtitle(paste(race_acr,  y_name, yr_range))
+}
+
+## saving plots as pdf file
+pdf('30aa_COGS2-BSNIP_Variation_1013.pdf')
+```
+
+## Plotting race proportions for the 3 studies
+```{r}
+## Just observing AA
+plot_Bar(race_total[race_total$cRace == 'AA', ], 'prop', 'Proportions', race_acr = 'AA', fill_arg = 'Study', yr_range = '2010-2013') + coord_flip()
+
+```
+
+
+## Getting proportion deltas
+```{r}
+AA_sub <- race_total[race_total$cRace == 'AA', ]
+
+# observed - expected
+AA_sub$prop_delt <- rep(0, nrow(AA_sub))
+
+## subset the AA_sub further by only looking at the census represented cities
+AA_sub <- AA_sub[AA_sub$cLocationCity %in% cities, ]
+
+# Loop through rows of AA_sub
+for (i in 1:nrow(AA_sub)) {
+  # Match the city from AA_sub with the city of the expected prop vector
+  AA_sub$prop_delt[i] <- AA_sub$prop[i] - year_exp_props[names(year_exp_props) == AA_sub$cLocationCity[i]]
+}
+```
+
+## Plotting Proportion Deltas
+```{r}
+plot_Bar(data_in = AA_sub, y_col = 'prop_delt', y_name = 'Proportion Delta', race_acr = 'AA', fill_arg = 'Study', yr_range = '2010-2013') + coord_flip()
+```
+
+## Characterizing the variability
+
+Methods used:
+* Range of proportion differences
+* Mean and standard deviation
+  * sensitive to outliers
+* Median and IQR
+  * robust to outliers
+
+```{r}
+
+GPC_mean <- mean(AA_sub$prop_delt[AA_sub$Study == 'GPC'])
+GPC_sd <- sd(AA_sub$prop_delt[AA_sub$Study == 'GPC'])
+
+COGS2_mean <- mean(AA_sub$prop_delt[AA_sub$Study == 'COGS2'])
+COGS2_sd <- sd(AA_sub$prop_delt[AA_sub$Study == 'COGS2'])
+
+BSNIP1_mean <- mean(AA_sub$prop_delt[AA_sub$Study == 'BSNIP1'])
+BSNIP1_sd <- sd(AA_sub$prop_delt[AA_sub$Study == 'BSNIP1'])
+
+prop_delts_1013 <- data.frame(means = c(GPC_mean, COGS2_mean, BSNIP1_mean), 
+                              st_devs = c(GPC_sd, COGS2_sd, BSNIP1_sd), 
+                              Study = c('GPC', 'COGS2', 'BSNIP1'))
+
+bar_plot <- ggplot(data = prop_delts_1013, aes(x = Study, y = means, fill = Study)) +
+  geom_bar(stat = "identity", position='dodge') +
+  geom_errorbar(aes(ymin=means-st_devs, ymax=means+st_devs), width=.2,
+                 position=position_dodge(.9)) + 
+  labs(y = 'Mean Proportion Deltas') +
+  ggtitle('2010-2013: Mean Proportion Deltas with Standard Deviations')
+
+bar_plot + geom_point(data = AA_sub, aes(x = Study, y = prop_delt))
+```
+
+## Beeswarm version: Boxplot + raw points
+```{r}
+library(ggbeeswarm)
+beeswarm.plot <- ggplot(data = AA_sub, aes(x = Study, y = prop_delt, color = Study)) +
+  geom_beeswarm(cex = 3, size = 1.75) + 
+  scale_color_brewer(palette = "Set1") +
+  labs(y = 'Proportion Deltas') +
+  ggtitle('2010-2013: Proportion Deltas with Boxplot Overlay') 
+
+beeswarm.plot + geom_boxplot(data = AA_sub, aes(x = Study, y = prop_delt), alpha = 0.25)
+
+# closing the pdf
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

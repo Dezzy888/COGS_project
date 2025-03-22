@@ -1,0 +1,492 @@
+---
+title: "cDiag4"
+author: "Daniel Zoleikhaeian"
+date: "2023-02-10"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setting up environment
+
+```{r setting up environment}
+library(ggplot2)
+library(dplyr)
+library(plyr)
+
+setwd('C:/Users/danie/Documents/Joshi Lab Materials/3 Studies Dataset/Dataset Merge/012623')
+df <- read.csv('bgc_merge_cDiag123_new.csv')
+#View(head(df))
+df_LA_gpc <- df[(df$cLocationCity == 'Los Angeles') & (df$cStudy == 'GPC'), ]
+
+#View(head(df_LA_gpc))
+```
+
+## Overall counts in LA
+
+```{r}
+library(readxl)
+df_check_2010 <- read_xlsx('reproj_30_2010.xlsx')
+df_check_2020 <- read_xlsx('reproj_30_2020.xlsx')
+
+LA_2010 <- df_check_2010[which(df_check_2010$City == 'Los Angeles, CA'),]
+LA_2020 <- df_check_2020[which(df_check_2020$City == 'Los Angeles, CA'),]
+LA <- rbind(LA_2010, LA_2020)
+LA <- LA[,-1]
+#View(LA)
+
+LA_avg <- as.data.frame(sapply(LA, mean, margin = 2))
+#View(LA_avg)
+LA_avg$categ <- rownames(LA_avg)
+#View(LA_avg)
+rownames(LA_avg) <- NULL
+freq <- LA_avg[,1]
+LA_avg[,1] <- LA_avg[,2]
+LA_avg[,2] <- freq
+
+colnames(LA_avg) <- c('categ', 'freq')
+#View(LA_avg)
+
+# Standardizing race acronyms
+LA_avg_races <- LA_avg[1:7,]
+colnames(LA_avg_races) <- c('cRace', 'freq')
+LA_avg_races$cRace[LA_avg_races$cRace == 'NA'] <- 'AE'
+LA_avg_races$cRace[LA_avg_races$cRace == 'PI'] <- 'NH'
+LA_avg_races <- LA_avg_races[order(LA_avg_races$cRace), ]
+rownames(LA_avg_races) <- NULL
+LA_avg_races <- LA_avg_races[1:6, ]
+
+# Race Proportions
+LA_avg_races$Proportions <- LA_avg_races$freq / sum(LA_avg_races$freq)
+
+LA_avg_races$cLocationInstitution <- 'Average Census'
+
+LA_avg_races <- LA_avg_races[,c(1,4,2,3)]
+colnames(LA_avg_races)[3] <- 'total_count'
+
+# #View(LA_avg_races)
+
+# Ethnicity
+LA_avg_eth <- LA_avg[8:9, ]
+colnames(LA_avg_eth) <- c('cHispanicorLatino', 'freq')
+LA_avg_eth$cHispanicorLatino[LA_avg_eth$cHispanicorLatino == 'NH'] <- 'No'
+LA_avg_eth$cHispanicorLatino[LA_avg_eth$cHispanicorLatino == 'HA'] <- 'Yes'
+
+LA_avg_eth$Proportions <- LA_avg_eth$freq / sum(LA_avg_eth$freq)
+
+LA_avg_eth$cLocationInstitution <- 'Average Census'
+
+LA_avg_eth <- LA_avg_eth[,c(1,4,2,3)]
+colnames(LA_avg_eth)[3] <- 'total_count'
+#View(LA_avg_eth)
+
+# Gender
+LA_avg_gen <- LA_avg[10:11,]
+colnames(LA_avg_gen) <- c('cGender', 'freq')
+
+LA_avg_gen$Proportions <- LA_avg_gen$freq / sum(LA_avg_gen$freq)
+
+LA_avg_gen$cLocationInstitution <- 'Average Census'
+
+LA_avg_gen <- LA_avg_gen[,c(1,4,2,3)]
+colnames(LA_avg_gen)[3] <- 'total_count'
+#View(LA_avg_gen)
+```
+
+
+## Counting by race and diagnosis4 within each institution
+```{r}
+brdI <- df_LA_gpc %>% 
+  dplyr::group_by(cRace,cDiagnosis4, cLocationInstitution) %>%  
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+View(brdI)
+```
+
+### Examining SZSAFD across race and institution
+
+```{r}
+szsafd <- brdI[brdI$cDiagnosis4 == 'SZSAFD', ]
+#View(szsafd)
+szsafd_colors <- c("#808080", "#85AD00", "#00A5FF", "#F8766D")
+
+inst <- levels(factor(szsafd$cLocationInstitution))
+szsafd_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  szsafd_totals[i] <- sum(szsafd$total_count[szsafd$cLocationInstitution == inst[i]])
+}
+
+names(szsafd_totals) <- inst
+szsafd_totals
+
+props <- rep(0, nrow(szsafd))
+
+for (i in 1:nrow(szsafd)) {
+  props[i] <- szsafd$total_count[i] / szsafd_totals[names(szsafd_totals) == szsafd$cLocationInstitution[i]]
+}
+
+szsafd$Proportions <- props
+szsafd$cDiagnosis4 <- NULL
+
+#View(szsafd)
+
+szsafd_tot <- rbind(szsafd, LA_avg_races)
+#View(szsafd_tot)
+
+szsafd_tots <- ggplot(data = szsafd_tot, aes(x = cRace, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = szsafd_colors) +
+  ggtitle('Proportions of Race for SZSAFD') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+szsafd_tots
+```
+
+### BAD12 across race and instution 
+
+```{r}
+bad12 <- brdI[brdI$cDiagnosis4 == 'BAD12', ]
+#View(bad12)
+
+inst <- levels(factor(bad12$cLocationInstitution))
+bad12_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  bad12_totals[i] <- sum(bad12$total_count[bad12$cLocationInstitution == inst[i]])
+}
+
+names(bad12_totals) <- inst
+bad12_totals
+
+props <- rep(0, nrow(bad12))
+
+for (i in 1:nrow(bad12)) {
+  props[i] <- bad12$total_count[i] / bad12_totals[names(bad12_totals) == bad12$cLocationInstitution[i]]
+}
+
+bad12$Proportions <- props
+bad12$cDiagnosis4 <- NULL
+
+#View(bad12)
+
+bad12_tot <- rbind(bad12, LA_avg_races)
+#View(bad12_tot)
+
+bad12_tots <- ggplot(data = bad12_tot, aes(x = cRace, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = szsafd_colors) +
+  ggtitle('Proportions of Race for BAD12') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+bad12_tots
+```
+
+### CS across race and institution
+
+```{r}
+cs <- brdI[brdI$cDiagnosis4 == 'CS', ]
+cs_colors <- c("#808080", "#00A5FF", "#F8766D")
+#View(cs)
+
+inst <- levels(factor(cs$cLocationInstitution))
+cs_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  cs_totals[i] <- sum(cs$total_count[cs$cLocationInstitution == inst[i]])
+}
+
+names(cs_totals) <- inst
+cs_totals
+
+props <- rep(0, nrow(cs))
+
+for (i in 1:nrow(cs)) {
+  props[i] <- cs$total_count[i] / cs_totals[names(cs_totals) == cs$cLocationInstitution[i]]
+}
+
+cs$Proportions <- props
+cs$cDiagnosis4 <- NULL
+
+#View(cs)
+
+cs_tot <- rbind(cs, LA_avg_races)
+#View(cs_tot)
+
+cs_tots <- ggplot(data = cs_tot, aes(x = cRace, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = cs_colors) +
+  ggtitle('Proportions of Race in Controls') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+cs_tots
+```
+
+
+
+## Counting by gender and cDiagnosis4 across instutions
+
+```{r}
+bgdI <- df_LA_gpc %>% 
+  dplyr::group_by(cGender, cDiagnosis4, cLocationInstitution) %>% 
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+#View(bgdI)
+```
+
+### Examining SZSAFD
+
+```{r}
+szsafd <- bgdI[bgdI$cDiagnosis4 == 'SZSAFD', ]
+#View(szsafd)
+
+inst <- levels(factor(szsafd$cLocationInstitution))
+szsafd_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  szsafd_totals[i] <- sum(szsafd$total_count[szsafd$cLocationInstitution == inst[i]])
+}
+
+names(szsafd_totals) <- inst
+szsafd_totals
+
+props <- rep(0, nrow(szsafd))
+
+for (i in 1:nrow(szsafd)) {
+  props[i] <- szsafd$total_count[i] / szsafd_totals[names(szsafd_totals) == szsafd$cLocationInstitution[i]]
+}
+
+szsafd$Proportions <- props
+szsafd$cDiagnosis4 <- NULL
+
+szsafd_tot <- rbind(szsafd, LA_avg_gen)
+
+#View(szsafd)
+
+szsafd_tots <- ggplot(data = szsafd_tot, aes(x = cGender, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = szsafd_colors) +
+  ggtitle('Proportions of Gender for SZSAFD') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+szsafd_tots
+```
+
+### Examining BAD12
+
+```{r}
+bad12 <- bgdI[bgdI$cDiagnosis4 == 'BAD12', ]
+#View(bad12)
+
+inst <- levels(factor(bad12$cLocationInstitution))
+bad12_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  bad12_totals[i] <- sum(bad12$total_count[bad12$cLocationInstitution == inst[i]])
+}
+
+names(bad12_totals) <- inst
+bad12_totals
+
+props <- rep(0, nrow(bad12))
+
+for (i in 1:nrow(bad12)) {
+  props[i] <- bad12$total_count[i] / bad12_totals[names(bad12_totals) == bad12$cLocationInstitution[i]]
+}
+
+bad12$Proportions <- props
+bad12$cDiagnosis4 <- NULL
+
+#View(bad12)
+
+bad12_tot <- rbind(bad12, LA_avg_gen)
+
+bad12_tots <- ggplot(data = bad12_tot, aes(x = cGender, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = szsafd_colors) +
+  ggtitle('Proportions of Gender for BAD12') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+bad12_tots
+```
+
+### Examining CS
+```{r}
+cs <- bgdI[bgdI$cDiagnosis4 == 'CS', ]
+#View(cs)
+
+inst <- levels(factor(cs$cLocationInstitution))
+cs_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  cs_totals[i] <- sum(cs$total_count[cs$cLocationInstitution == inst[i]])
+}
+
+names(cs_totals) <- inst
+cs_totals
+
+props <- rep(0, nrow(cs))
+
+for (i in 1:nrow(cs)) {
+  props[i] <- cs$total_count[i] / cs_totals[names(cs_totals) == cs$cLocationInstitution[i]]
+}
+
+cs$Proportions <- props
+cs$cDiagnosis4 <- NULL
+
+#View(cs)
+
+cs_tot <- rbind(cs, LA_avg_gen)
+
+cs_tots <- ggplot(data = cs_tot, aes(x = cGender, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = cs_colors) +
+  ggtitle('Proportions of Gender for Controls') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+cs_tots
+```
+
+
+
+
+## Counting by ethnicity and cDiagnosis4 across instutions
+```{r}
+bedI <- df_LA_gpc %>% 
+  dplyr::group_by(cHispanicorLatino, cDiagnosis4, cLocationInstitution) %>% 
+  dplyr::summarise(total_count=n(), .groups = 'drop')
+
+#View(bedI)
+```
+
+### Examining SZSAFD
+```{r}
+szsafd <- bedI[bedI$cDiagnosis4 == 'SZSAFD', ]
+#View(szsafd)
+
+inst <- levels(factor(szsafd$cLocationInstitution))
+szsafd_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  szsafd_totals[i] <- sum(szsafd$total_count[szsafd$cLocationInstitution == inst[i]])
+}
+
+names(szsafd_totals) <- inst
+szsafd_totals
+
+props <- rep(0, nrow(szsafd))
+
+for (i in 1:nrow(szsafd)) {
+  props[i] <- szsafd$total_count[i] / szsafd_totals[names(szsafd_totals) == szsafd$cLocationInstitution[i]]
+}
+
+szsafd$Proportions <- props
+szsafd$cDiagnosis4 <- NULL
+
+#View(szsafd)
+szsafd_tot <- rbind(szsafd, LA_avg_eth)
+
+szsafd_tots <- ggplot(data = szsafd_tot, aes(x = cHispanicorLatino, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = szsafd_colors) +
+  ggtitle('Proportions of Ethnicity for SZSAFD') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+szsafd_tots
+```
+
+### Examining BAD12
+```{r}
+bad12 <- bedI[bedI$cDiagnosis4 == 'BAD12', ]
+#View(bad12)
+
+inst <- levels(factor(bad12$cLocationInstitution))
+bad12_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  bad12_totals[i] <- sum(bad12$total_count[bad12$cLocationInstitution == inst[i]])
+}
+
+names(bad12_totals) <- inst
+bad12_totals
+
+props <- rep(0, nrow(bad12))
+
+for (i in 1:nrow(bad12)) {
+  props[i] <- bad12$total_count[i] / bad12_totals[names(bad12_totals) == bad12$cLocationInstitution[i]]
+}
+
+bad12$Proportions <- props
+bad12$cDiagnosis4 <- NULL
+
+#View(bad12)
+bad12_tot <- rbind(bad12, LA_avg_eth)
+
+bad12_tots <- ggplot(data = bad12_tot, aes(x = cHispanicorLatino, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = szsafd_colors) +
+  ggtitle('Proportions of Ethnicity for BAD12') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+bad12_tots
+```
+
+### Examining CS
+
+```{r}
+cs <- bedI[bedI$cDiagnosis4 == 'CS', ]
+#View(cs)
+
+inst <- levels(factor(cs$cLocationInstitution))
+cs_totals <- rep(0, length(inst))
+
+for (i in 1:length(inst)) {
+  cs_totals[i] <- sum(cs$total_count[cs$cLocationInstitution == inst[i]])
+}
+
+names(cs_totals) <- inst
+cs_totals
+
+props <- rep(0, nrow(cs))
+
+for (i in 1:nrow(cs)) {
+  props[i] <- cs$total_count[i] / cs_totals[names(cs_totals) == cs$cLocationInstitution[i]]
+}
+
+cs$Proportions <- props
+cs$cDiagnosis4 <- NULL
+
+#View(cs)
+cs_tot <- rbind(cs, LA_avg_eth)
+
+cs_tots <- ggplot(data = cs_tot, aes(x = cHispanicorLatino, y = Proportions, fill = cLocationInstitution)) +
+  geom_bar(position = position_dodge(), 
+           stat = 'identity') +
+  scale_fill_manual(values = cs_colors) +
+  ggtitle('Proportions of Ethnicity for Controls') + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+cs_tots
+```
+

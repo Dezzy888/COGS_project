@@ -1,0 +1,446 @@
+---
+title: "51. Full COGS2 CS Convergence"
+author: "Daniel Zoleikhaeian"
+date: "2023-08-15"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Importing COGS2 data
+```{r}
+library(grid)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+
+df_COGS2 <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_060723.csv')
+df_COGS2 <- df_COGS2[df_COGS2$cStudy == 'COGS2', ]
+nrow(df_COGS2)
+
+head(df_COGS2)
+# adding year column
+df_COGS2$cEnrollmentYear <- as.numeric(substr(df_COGS2$cEnrollmentDateYear, 1,4))
+head(df_COGS2)
+
+unique(df_COGS2$cRace)
+
+# re-encoding OT/UNK/MR into one group
+df_COGS2$cRace2 <- df_COGS2$cRace
+df_COGS2$cRace2[df_COGS2$cRace2 %in% c('OT', 'OT/UNK', 'MR', 'UNK')] <- 'OT/MR'
+nrow(df_COGS2)
+```
+
+### Helper function: Transforming by dictionary
+```{r}
+dict_transform <- function(keys, values, vec) {
+  for (i in 1:length(keys)) {
+    vec[vec == keys[i]] <- values[i]
+  }
+  return (vec)
+}
+```
+
+### Group code manipulations
+```{r}
+group_codes_df <- data.frame(Race2 = rep(c('AA', 'AE', 'AS','CA','NH','OT/MR'), rep(4,6)),
+                             Hispan2 = rep(rep(c('No','Yes'), c(2,2)), 6),
+                             Gender = rep(c('F','M'), 12),
+                             group_code = 1:24)
+
+group_code_gen <- function(df, handbook) {
+  df$group_code <- rep(0,nrow(df))
+  for (n in 1:nrow(df)) {
+    for (i in 1:nrow(handbook)) {
+      if (df[n,1] == handbook[i,1] &&
+          df[n,2] == handbook[i,2] &&
+          df[n,3] == handbook[i,3]) {
+        df$group_code[n] <- handbook$group_code[i]
+        break
+      } else {
+        next
+      }
+    }
+  }
+  return (df)
+}
+
+group_code_inverse <- function(df, handbook) {
+  df <- cbind(handbook[handbook$group_code %in% df$group_code, 1:3], df)
+  return(df)
+}
+```
+
+
+## Importing ACS Data
+```{r}
+df_acs <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\acs_1014_complete.csv')
+```
+
+
+## Pooling the cities together, weighted by COGS counts for CS
+```{r}
+
+# finding cogs city counts
+city_counts <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'CS', ], 'cLocationCity')
+
+colnames(df_acs)
+city_counts_acs <- plyr::count(df_acs, 'CITY', wt_var = 'PERWT')
+city_counts_acs
+# city_counts$proportion <- city_counts$freq / sum(city_counts$freq) # used to reweight the PERWT
+city_counts
+city_counts$proportion <- city_counts$freq / city_counts_acs$freq
+city_counts
+```
+
+## City proportions
+```{r}
+# collection of target proportions
+cityprops <- vector("list", 5)
+
+cogs_codes <- unique(df_acs$CITY)
+
+
+# reweighting all the person weights by the frequencies found in COGS for CS
+for (i in 1:length(cogs_codes)) {
+  df_acs$PERWT_CS[df_acs$CITY == cogs_codes[i]] <- df_acs$PERWT[df_acs$CITY == cogs_codes[i]] * city_counts$proportion[i]
+}
+
+colnames(df_acs)
+```
+
+
+## PERWT Demonstration
+```{r}
+df_acs_sub <- df_acs[, c('CITY','Race2','Hispan2','SEX','PERWT','PERWT_CS')]
+
+#subsetting by city code 3730 (Los Angeles)
+df_acs_LA <- df_acs_sub[df_acs_sub$CITY == 3730,]
+df_acs_NY <- df_acs_sub[df_acs_sub$CITY == 4610,]
+
+# This dataframe shows how much of the city population the cogs sample captured
+city_counts
+
+# Showing that the proportion x the PERWT = PERWT_CS
+all(city_counts$proportion[1] * df_acs_LA$PERWT == df_acs_LA$PERWT_CS)
+
+# Showing that the original sample size is recovered
+sum(df_acs_LA$PERWT_CS)
+sum(df_acs_NY$PERWT_CS)
+city_counts
+
+df_PERWT <- data.frame(Race2 = df_acs_LA$Race2,
+                       Hispan2 = df_acs_LA$Hispan2,
+                       Gender = df_acs_LA$SEX,
+                       og_PERWT = df_acs_LA$PERWT,
+           rescaled_PERWT = df_acs_LA$PERWT_CS)
+head(df_PERWT)
+```
+
+
+```{r}
+
+pool_cs <- plyr::count(df_acs, c('Race2', 'Hispan2', 'SEX'), wt_var = 'PERWT_CS')
+pool_cs$prop <- pool_cs$freq/sum(pool_cs$freq)
+pool_cs$Race2 <- dict_transform(c(1:6),c('CA', 'AA', 'AE','AS','NH','OT/MR'), pool_cs$Race2)
+pool_cs$Hispan2 <- dict_transform(c(0,1), c('No', 'Yes'), pool_cs$Hispan2)
+pool_cs$SEX <- dict_transform(c(1,2),c('M','F'), pool_cs$SEX)
+pool_cs <- pool_cs[order(pool_cs$Race2,pool_cs$Hispan2,pool_cs$SEX),]
+
+pool_cs <- group_code_gen(pool_cs, group_codes_df)
+pool_cs 
+
+# these are the target proportions
+```
+
+## Characterizing proportions
+```{r}
+prop_ct_cs <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'CS',], c('cRace2', 'cHispanicorLatino', 'cGender'))
+
+prop_ct_cs$props <- prop_ct_cs$freq / sum(prop_ct_cs$freq)
+
+prop_ct_cs <- group_code_gen(prop_ct_cs, group_codes_df)
+
+prop_ct_cs
+pool_cs
+
+all(prop_ct_cs$group_code == pool_cs$group_code)
+
+pool_cs[pool_cs$group_code %in% setdiff(pool_cs$group_code, prop_ct_cs$group_code),] # all the counts are low
+
+pool_cs_trunc <- pool_cs[pool_cs$group_code %in% intersect(prop_ct_cs$group_code, pool_cs$group_code),]
+
+pool_cs_trunc
+
+df_comparison <- cbind(prop_ct_cs, pool_cs_trunc$prop)
+df_comparison$group_code <- NULL
+df_comparison$sam_over <- ifelse(prop_ct_cs$props > pool_cs_trunc$prop, 'Over','-')
+df_comparison$sam_under <- ifelse(prop_ct_cs$props < pool_cs_trunc$prop, 'Under','-')
+
+sig_res_p_vals <- rep(0, nrow(df_comparison))
+for (i in 1:nrow(df_comparison)) {
+  test_obj <- binom.test(df_comparison$freq[i], n = sum(prop_ct_cs$freq), p = df_comparison$`pool_cs_trunc$prop`[i], alternative = 'two.sided')
+  sig_res_p_vals[i] <- test_obj$p.value
+}
+
+sig_res_p_vals
+
+holm_corr <- p.adjust(sig_res_p_vals, "holm")
+holm_corr
+
+sig_desig_cs <- ifelse(holm_corr < 0.05, '**', '-')
+sig_desig_cs
+
+
+
+
+df_comparison$significance <- sig_desig_cs
+df_comparison$holm_pval <- holm_corr
+View(df_comparison)
+```
+
+## Pool generator function
+```{r}
+pool_gen <- function(Diag4, cogs_data, acs_data, grp_codes_df) {
+  city_counts <- plyr::count(cogs_data[cogs_data$cDiagnosis4 == Diag4, ], 'cLocationCity')
+  #city_counts$proportion <- city_counts$freq / sum(city_counts$freq) # used to reweight the PERWT
+  
+  city_counts_acs <- plyr::count(acs_data, 'CITY', wt_var = 'PERWT')
+  
+  # city_counts$proportion <- city_counts$freq / sum(city_counts$freq) # used to reweight the PERWT
+  city_counts$proportion <- city_counts$freq / city_counts_acs$freq
+  
+  # collection of target proportions
+  cityprops <- vector("list", 4)
+  
+  cogs_codes <- unique(acs_data$CITY)
+  colnames(acs_data)
+  
+  # reweighting all the person weights by the frequencies found in COGS for CS
+  for (i in 1:length(cogs_codes)) {
+    acs_data$PERWT_Diag[acs_data$CITY == cogs_codes[i]] <- acs_data$PERWT[acs_data$CITY == cogs_codes[i]] * city_counts$proportion[i]
+  }
+  
+  pool <- plyr::count(acs_data, c('Race2', 'Hispan2', 'SEX'), wt_var = 'PERWT_Diag')
+  pool$prop <- pool$freq/sum(pool$freq)
+  pool$Race2 <- dict_transform(c(1:6),c('CA', 'AA', 'AE','AS','NH','OT/MR'), pool$Race2)
+  pool$Hispan2 <- dict_transform(c(0,1), c('No', 'Yes'), pool$Hispan2)
+  pool$SEX <- dict_transform(c(1,2),c('M','F'), pool$SEX)
+  pool <- pool[order(pool$Race2,pool$Hispan2,pool$SEX),]
+  
+  pool <- group_code_gen(pool, grp_codes_df)
+  
+    cogs_data_diag <- cogs_data[cogs_data$cDiagnosis4 == Diag4,]
+  cogs_counts <- plyr::count(cogs_data_diag, c('cRace2', 'cHispanicorLatino', 'cGender'))
+  cogs_counts$props <- cogs_counts$freq / sum(cogs_counts$freq)
+  cogs_counts <- group_code_gen(cogs_counts, grp_codes_df)
+  cogs_counts
+
+  # These are the unicorns - ignore these 
+  pool[pool$group_code %in% setdiff(pool$group_code, cogs_counts$group_code),]
+  # Asian Hispanics
+  # American indians/Alaska natives
+  # Native Hawaiian/ Pacific Islander Hispanics
+  
+  pool <- pool[pool$group_code %in% intersect(pool$group_code, cogs_counts$group_code),]
+  
+  
+  return (pool) 
+}
+```
+
+# Beginning the first run
+
+## Setting the target proportions
+```{r}
+df_COGS2_cs <- df_COGS2[df_COGS2$cDiagnosis4 == 'CS',]
+cogs_counts <- plyr::count(df_COGS2_cs, c('cRace2', 'cHispanicorLatino', 'cGender'))
+cogs_counts$props <- cogs_counts$freq / sum(cogs_counts$freq)
+cogs_counts <- group_code_gen(cogs_counts, group_codes_df)
+cogs_counts
+
+head(df_acs)
+# These are the unicorns - ignore these 
+pool_cs[pool_cs$group_code %in% setdiff(pool_cs$group_code, cogs_counts$group_code),]
+# Asian Hispanics
+# American indians/Alaska natives
+# Native Hawaiian/ Pacific Islander Hispanics
+
+pool_cs <- pool_cs[pool_cs$group_code %in% intersect(pool_cs$group_code, cogs_counts$group_code),]
+
+pool_cs # these are the target proportions now
+nrow(pool_cs)
+
+pool_cs2 <- pool_gen('CS',df_COGS2,df_acs,group_codes_df)
+identical(pool_cs2, pool_cs) # the pool generator function works
+```
+
+## Beginning the sampler
+```{r}
+
+sampling_algorithm <- function(cogs_og, pool_df, scale_factor, thresh, n_iter, do_print = FALSE, suppress_df = TRUE) {
+  # making a copy of the original cogs data
+  # this copy will be updated in each pass
+  cogs_counts_updated <- cogs_og[, c('group_code', 'freq', 'props')]
+  cogs_counts_updated$freq_og <- cogs_og$freq
+  cogs_counts_updated$props_og <- cogs_og$props
+  cogs_counts_updated$props_target <- pool_df$prop
+  cogs_counts_updated <- cogs_counts_updated[, c('group_code', 'freq', 'freq_og','props_og','props_target','props')]
+
+  n_steps <- 0
+  size_arg <- sum(cogs_og$freq) * scale_factor
+  
+  # start loop here
+  
+  
+  number_rejected <- data.frame(group_code = cogs_og$group_code,
+                                  n = rep(0, nrow(cogs_og)))          
+  
+  for (N in 1:n_iter) {
+    
+    # check stop condition: if all the new proportions are within 0.05 of the acs proportions, then stop
+    if (all(cogs_counts_updated$props >= (pool_df$prop - thresh)&
+    cogs_counts_updated$props <= pool_df$prop + thresh)) {
+    # if (all(((cogs_counts_updated$props - pool_df$prop) / pool_df$prop) < thresh)) {
+      if (do_print) {cat('Number of steps:', n_steps, '\n')}
+      break
+    }
+  
+    
+    
+    # Methodology: sample from the group_codes based on the proportion found in the original cogs_counts
+    
+    sam <- sample(x = cogs_og$group_code, size = size_arg, prob = cogs_og$props, replace = TRUE)
+    sam_counts <- plyr::count(sam)
+    
+    # verifying that all the group codes are in the right order
+    # all(cogs_og$group_code == pool_df$group_code)
+    
+    # number_rejected <- data.frame(group_code = cogs_og$group_code,
+    #                               n = rep(0, nrow(cogs_og)))
+    # for each group code in cogs_counts
+    for (i in 1:nrow(cogs_counts_updated)) {
+      
+      # first check if the group was in the sample
+      if (any(cogs_counts_updated$group[i] %in% sam_counts$x)) {
+        # check whether the category is currently overrepresented
+        # if it is, then don't touch it
+        if (cogs_counts_updated$props[i] > pool_df$prop[i]) {
+          # update the number rejected
+          # but don't update the counts
+        # if (((cogs_counts_updated$props[i] - pool_df$prop[i]) / pool_df$prop[i]) >= thresh) {
+          number_rejected$n[number_rejected$group_code == cogs_counts_updated$group_code[i]] <- number_rejected$n[number_rejected$group_code == cogs_counts_updated$group_code[i]] + sam_counts$freq[sam_counts$x == cogs_counts_updated$group_code[i]]
+          
+        } else {
+          # the add the people to the sample
+          cogs_counts_updated$freq[i] <- cogs_counts_updated$freq[i] + sam_counts$freq[sam_counts$x == cogs_counts_updated$group_code[i]] 
+        }
+      }
+    }
+    
+    # update the proportions
+    cogs_counts_updated$props <- cogs_counts_updated$freq / sum(cogs_counts_updated$freq)
+    
+    # update the number of iterations
+    n_steps <- n_steps + 1
+  }
+  
+  if (N == n_iter && do_print) {
+    cat('Did not converge in', n_steps, 'steps.\n')
+  }
+  
+  if (suppress_df) {
+    return(n_steps) 
+  } else {
+    return (list(cogs_counts_updated, number_rejected, n_steps))
+  }
+}
+
+s1 <- Sys.time()
+output <- sampling_algorithm(cogs_og = cogs_counts, pool_df = pool_cs, scale_factor = 0.5, thresh = 0.025, n_iter = 1000, do_print = TRUE, suppress_df = FALSE)
+s2 <- Sys.time()
+
+View(output[[1]])
+View(output[[2]])
+output[[3]]
+df2 <- group_code_inverse(output[[2]], group_codes_df)
+View(df2)
+
+s2 - s1
+
+s3 <- Sys.time()
+output2 <- sampling_algorithm(cogs_og = cogs_counts, pool_df = pool_cs, scale_factor = 1, thresh = 0.05, n_iter = 1000, suppress_df = TRUE)
+output2
+
+s4 <- Sys.time()
+
+s4 - s3
+
+
+output[[2]]
+```
+
+## Finding the Distribution of number of steps for convergence at 0.03 level with resampling 50% of the original sample size
+```{r}
+n_sim <- 1000
+th <- 0.025
+sf <- 0.3
+
+steps_storage_cs_acs <- rep(0, n_sim)
+start_time <- Sys.time()
+for (i in 1:n_sim) {
+  steps_storage_cs_acs[i] <- sampling_algorithm(cogs_og = cogs_counts, pool_df = pool_cs, scale_factor = sf, thresh = th, n_iter = 1000, suppress_df = TRUE)
+}
+
+end_time <- Sys.time()
+end_time - start_time
+rng <- range(steps_storage_cs_acs)
+# hist(steps_storage_cs_acs, main = 'CS: Number of Resamples\nuntil Convergence', breaks = rng[1]:rng[2], xlab = "Number of Resamples")
+hist(steps_storage_cs_acs, freq = TRUE, main = 'CS: Number of Resamples\nuntil Convergence', breaks = rng[1]:rng[2], xlab = 'Number of Resamples', xlim = c(0,rng[2]+1))
+title(sub = paste('Scale factor:', sf, '\tThreshold:', th), font.sub = 3, col.sub = 'darkgray')
+grid()
+steps_storage_cs_acs <- sort(steps_storage_cs_acs)
+conf_int <- c(steps_storage_cs_acs[0.025*n_sim], steps_storage_cs_acs[0.975*n_sim])
+med_step <- median(steps_storage_cs_acs)
+library(kableExtra)
+library(tableHTML)
+perc_names <- c("2.5th",
+                "1st Quartile",
+                "Median",
+                "3rd Quartile",
+                "97.5th"
+                )
+perc_res <- quantile(steps_storage_cs_acs, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+
+sum_stats <- data.frame(Percentile = names(perc_res),
+                        Value = unname(perc_res))
+sum_stats
+
+tbl <- kbl(sum_stats, caption = "Number of Resamples until Convergence for Control Subjects", table.attr = "style='width:50%;'" ) %>%
+kable_styling(bootstrap_options = "striped", full_width = T, position = "center")
+tbl
+
+
+
+steps_storage_cs_acs[0.25*1000]
+steps_storage_cs_acs[0.75*1000]
+
+cogs_counts
+
+prop_comparison <- data.frame(acs_prop = pool_cs$prop, cogs_props = cogs_counts$props, group = cogs_counts$group_code)
+prop_comparison$cog_freq <- cogs_counts$freq
+prop_comparison
+
+mean(steps_storage_cs_acs)
+se_mean <- sd(steps_storage_cs_acs) / sqrt(length(steps_storage_cs_acs))
+CI_mean <- mean(steps_storage_cs_acs) + c(-2,2) * sd(steps_storage_cs_acs)
+CI_mean
+
+sd(steps_storage_cs_acs)
+
+```

@@ -1,0 +1,171 @@
+---
+title: "38. Ethnicity COGS2"
+author: "Daniel Zoleikhaeian"
+date: "2023-06-12"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Importing Dataset
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+df_COGS2 <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_060723.csv')
+df_COGS2 <- df_COGS2[df_COGS2$cStudy == 'COGS2', ]
+
+# adding year column
+df_COGS2$cEnrollmentYear <- as.numeric(substr(df_COGS2$cEnrollmentDateYear, 1,4))
+
+# no NAs; dataset is complete
+nrow(df_COGS2) == sum(complete.cases(df_COGS2)) # TRUE
+```
+
+# Helper functions
+
+## By-city proportion generator
+```{r}
+prop_grt <- function(df) {
+  props <- rep(0, nrow(df))
+  for (i in 1:nrow(df)) {
+    props[i] <- df$freq[i] / sum(df$freq[df$cLocationCity == df$cLocationCity[i]])
+  }
+  df$props <- props
+  return (df)
+}
+```
+
+### Ethnicity plotter
+```{r}
+eth_plottr <- function(df, grp_name) {
+  ggplot(data=df, aes(x = cLocationCity, y = props, fill = cHispanicorLatino)) + geom_bar(stat = 'identity') + ylab('Proportion') + ggtitle(paste('COGS2: ', grp_name, ' Hispanic/Latino Proportions by City', sep = ''))
+}
+```
+
+### Ethnicity plotter - boxplot
+```{r}
+eth_box <- function(df, grp_name) {
+  df_sub <- df[df$cHispanicorLatino == grp_name, ]
+  ggplot(data = df_sub, x = Diagnosis, y = props) + geom_boxplot(aes(x = Diagnosis, y = props)) + geom_point(aes(x = Diagnosis, y = props, color = cLocationCity), size = 3, shape = 19) + ggtitle(paste('COGS2 Hisapnic Latino Status = ', grp_name, ' Proportions across Cities', sep = '')) +  ylab('Proportion')
+}
+```
+
+# Analyzing Ethnicity by City
+
+## Time-invariant exploration
+
+### All subjects
+```{r}
+HL_counts <- plyr::count(df_COGS2, vars = c('cLocationCity', 'cHispanicorLatino'))
+#View(HL_counts)
+
+HL_counts <- prop_grt(HL_counts)
+
+eth_all <- eth_plottr(HL_counts, 'Total')
+eth_all
+```
+
+### HC
+```{r}
+hc_HL <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'CS',], vars = c('cLocationCity', 'cHispanicorLatino'))
+#View(hc_HL)
+
+hc_HL <- prop_grt(hc_HL)
+
+hp_hc <- eth_plottr(hc_HL, 'CS')
+hp_hc
+```
+
+### SZSAFD
+```{r}
+szsafd_HL <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'SZSAFD',], vars = c('cLocationCity', 'cHispanicorLatino'))
+#View(szsafd_HL)
+
+szsafd_HL <- prop_grt(szsafd_HL)
+
+hp_szsafd <- eth_plottr(szsafd_HL, 'SZSAFD')
+hp_szsafd
+```
+
+### Boxplot representations
+```{r}
+hc_HL$Diagnosis <- rep('CS', nrow(hc_HL))
+szsafd_HL$Diagnosis <- rep('SZSAFD', nrow(szsafd_HL))
+total_df <- rbind(hc_HL, szsafd_HL)
+box_hp_Y <- eth_box(total_df, 'Yes')
+box_hp_N <- eth_box(total_df, 'No')
+box_hp_Y
+box_hp_N
+```
+
+## Time-variant exploration - Gender proportions over time (cumulative)
+
+### Generating proportions
+```{r}
+diagnoses <- c('CS', 'SZSAFD')
+cities <- unique(df_COGS2$cLocationCity)
+years <- unique(df_COGS2$cEnrollmentYear)
+
+n <- 2 * length(diagnoses) * length(cities) * length(years)
+
+# empty dataframe to hold data
+df_HL <- data.frame(City = rep('',n),
+                    Year = rep(0,n),
+                    Diagnosis = rep('',n),
+                    Hisp_Lat = rep('', n),
+                    Prop = rep(0, n)
+                    )
+n_track <- 1
+for (d in 1:length(diagnoses)) {
+  for (i in 1:length(years)) {
+    for (j in 1:length(cities)) {
+      df_sub <- df_COGS2[df_COGS2$cDiagnosis3 == diagnoses[d] & df_COGS2$cLocationCity == cities[j] & df_COGS2$cEnrollmentYear <= years[i],]
+      if (nrow(df_sub) == 0) {
+        n_track <- n_track + 2
+      next
+    }
+      eth_cts <- plyr::count(df_sub, var = 'cHispanicorLatino')
+      eth_cts$props <- eth_cts$freq / sum(eth_cts$freq)
+      
+      df_HL[n_track:(n_track+1),1] <- cities[j]
+      df_HL[n_track:(n_track+1),2] <- years[i]
+      df_HL[n_track:(n_track+1),3] <- diagnoses[d]
+      df_HL[n_track:(n_track+1),4] <- eth_cts$cHispanicorLatino
+      df_HL[n_track:(n_track+1), 5] <- eth_cts$props 
+      n_track <- n_track + 2
+    }
+  }
+}
+df_HL
+```
+
+### Plotting the proportions
+```{r}
+#View(his_lat_Y)
+his_lat_Y <- df_HL[df_HL$Hisp_Lat == 'Yes', ]
+his_lat_N <- df_HL[df_HL$Hisp_Lat == 'No', ]
+# nrow(his_lat_Y) + nrow(his_lat_N) == nrow(df_HL) # TRUE
+
+hY_p <- ggplot(data=his_lat_Y, aes(x=Year, y=Prop, group=interaction(City, Diagnosis), linetype = Diagnosis)) +
+  geom_line(data = his_lat_Y, aes(color = City), size = 1.1) +
+  geom_point(aes(color = City)) +
+  ggtitle('COGS2: Hispanic/Latino Cumulative Proportions over\nTime for CS and SZSAFD') + ylab('Proportion') + theme(plot.title = element_text(hjust = 0.5))
+
+hN_p <- ggplot(data=his_lat_N, aes(x=Year, y=Prop, group=interaction(City, Diagnosis), linetype = Diagnosis)) +
+  geom_line(data = his_lat_N, aes(color = City), size = 1.1) +
+  geom_point(aes(color = City)) +
+  ggtitle('COGS2: Non-hispanic/Latino Cumulative Proportions over\nTime for CS and SZSAFD') + ylab('Proportion') + theme(plot.title = element_text(hjust = 0.5))
+
+hY_p
+hN_p
+```
+
+Preliminary conclusions:
+* All city samples have low proportions of Hispanics or Latinos
+* Wider range of Hispanic/Latino Proportions for SZSAFD than for CS
+* General increase in Hispanic/Latino Proportions over time 

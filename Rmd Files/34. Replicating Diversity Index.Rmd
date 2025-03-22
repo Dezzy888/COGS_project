@@ -1,0 +1,195 @@
+---
+title: "34. Replicating Diversity Index on National Equity Atlas"
+author: "Daniel Zoleikhaeian"
+date: "2023-05-31"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading COGS2 cities
+```{r}
+library(dplyr)
+## 2010 IPUMS data
+df_ipums <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\usa_00002.csv')
+df_COGS2 <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+
+df_COGS2 <- df_COGS2[df_COGS2$cStudy == 'COGS2', ]
+sort(unique(df_COGS2$cLocationCity))
+
+## Subsetting by COGS2 cities
+### Using the city codes provided in the data dictionary
+cogs2_citycodes <- c(3730, 4610, 5330, 6270, 6430)
+df_ipums_cogs2 <- df_ipums[df_ipums$CITY %in% cogs2_citycodes, ]
+unique(df_ipums_cogs2$CITY)
+sort(unique(df_ipums$CITY))
+
+# seems like no 2010 for San Diego from IPUMS
+sum(df$CITY == 6270)
+
+head(df_ipums_cogs2)
+
+# removing people who did not report HISPAN status
+df_9 <- df_ipums_cogs2[df_ipums_cogs2$HISPAN == 9, ] # empty dataframe
+View(df_9)
+
+# everyone reported a Hispanic status in the sample
+unique(df_ipums_cogs2$HISPAN)
+unique(df_ipums$HISPAN)
+```
+
+# Checking Los Angeles in 2010
+```{r}
+LA <- df_ipums_cogs2[df_ipums_cogs2$CITY == 3730, ]
+
+# summing the PERWT column, and multiplying by 100 to check if this matches the population
+
+sum(LA$PERWT) # 3795389
+LA$CITYPOP[1] * 100 # 3797100 --> some discrepancy
+
+head(LA)
+
+# checking if all cases are complete (no NAs or blanks)
+all(complete.cases(LA)) # returns TRUE
+
+```
+
+# Generating Diversity Index
+
+* Source for what counts as PI: 
+
+https://api-gbv.org/wp-content/uploads/2019/06/API-demographics-identities-May-2019.pdf
+
+PI ethnicities: Carolinian, Chamorro, Chuukese, Fijian, Guamanian, Hawaiian, Kosraean,
+Marshallese, Native Hawaiian, Niuean, Palauan, Papua New Guinean, Pohnpeian, Samoan, Tokelauan,
+Tongan, Yapese.
+
+```{r}
+# Examining the Asian population
+# goal is to find a way to separate other Asian and PI
+# approach: look at RACED variable
+
+other_as_pi <- LA[LA$RACE == 6, ]
+sort(unique(other_as_pi$RACED))
+
+# using data dictionary for RACED
+PI_raced <- c(680:699)
+
+PI_only <- LA[LA$RACE == 6 & LA$RACED %in% PI_raced, ]
+AS_only <- LA[LA$RACE == 6 & !(LA$RACED %in% PI_raced), ]
+
+(nrow(PI_only) + nrow(AS_only)) == nrow(other_as_pi)
+```
+
+## Encoding a new race/ethnicity variable
+```{r}
+# Using same 7 categories as National Equity Atlas
+LA$NEA_grp <- rep(0, nrow(LA))
+LA$NEA_grp[LA$RACE == 1 & LA$HISPAN == 0] <- 1 # Non-hispanic White
+LA$NEA_grp[LA$RACE == 2 & LA$HISPAN == 0] <- 2 # Non-hispanic Black
+LA$NEA_grp[LA$RACE == 3 & LA$HISPAN == 0] <- 3 # Non-hispanic American Indian or Alaska Native
+LA$NEA_grp[LA$RACE %in% 4:6 & !(LA$RACED %in% PI_raced) & LA$HISPAN == 0] <- 4 # Non-hispanic Asian
+LA$NEA_grp[LA$RACE == 6 & LA$RACED %in% PI_raced & LA$HISPAN == 0] <- 5 # Non-Hispanic Pacific Islander
+LA$NEA_grp[LA$RACE %in% 7:9 & LA$HISPAN == 0] <- 6 # Non-Hispanic Mixed/Other
+LA$NEA_grp[LA$HISPAN != 0] <- 7 # Hispanic
+```
+
+## Diversity index calculation
+
+### Helper function: Diversity Index
+```{r}
+mult_ent <- function(race_prop_vec) {
+  
+  tot <- 0
+  
+  for (i in 1:length(race_prop_vec)) {
+    if (race_prop_vec[i] != 0) {
+      tot <- tot + race_prop_vec[i] * log(1/race_prop_vec[i])
+    }
+  }
+  return(tot)
+}
+```
+
+### Generating the vector of group proportions
+```{r}
+# effective total population
+tot_pop <- sum(LA$PERWT)
+
+# Generating a proportion
+LA$PROP <- LA$PERWT/tot_pop
+sum(LA$PROP) # sums to 1
+
+LA$PROP2 <- LA$PERWT/(LA$CITYPOP*100)
+sum(LA$PROP2) # nearly sums to 1
+
+# Generating a new data vector for all the race categories from NEA_grp
+
+prop_vec <- rep(0, 7)
+prop_vec2 <- prop_vec
+
+for (i in 1:length(prop_vec)) {
+  prop_vec[i] <- sum(LA$PROP[LA$NEA_grp == i])
+  prop_vec2[i] <- sum(LA$PROP2[LA$NEA_grp == i])
+}
+
+## calculating LA multigroup entropy aka diversity index in 2010
+mult_ent(prop_vec) # 1.270208
+mult_ent(prop_vec2) # 1.270086
+
+## compare to NEA in LA 2010: 1.28
+
+## same thing but combining Asian and Pacific Islander
+AS_PI <- prop_vec[4] + prop_vec[5]
+prop_vec3 <- c(prop_vec[1:3], AS_PI, prop_vec[6:7])
+mult_ent(prop_vec3) # 1.263625
+```
+
+# Checking all COGS cities except SD
+```{r}
+
+cities <- unique(df_ipums_cogs2$CITY)
+df_res <- data.frame(CityID = cities, 
+                     City_name = c('Los Angeles', 'New York', 'Philadelphia', 'Seattle'),
+                     Diversity_idx = rep(0, length(cities)))
+
+# Using same 7 categories as National Equity Atlas
+df_ipums_cogs2$NEA_grp <- rep(0, nrow(df_ipums_cogs2))
+df_ipums_cogs2$NEA_grp[df_ipums_cogs2$RACE == 1 & df_ipums_cogs2$HISPAN == 0] <- 1 # Non-hispanic White
+df_ipums_cogs2$NEA_grp[df_ipums_cogs2$RACE == 2 & df_ipums_cogs2$HISPAN == 0] <- 2 # Non-hispanic Black
+df_ipums_cogs2$NEA_grp[df_ipums_cogs2$RACE == 3 & df_ipums_cogs2$HISPAN == 0] <- 3 # Non-hispanic American Indian or Alaska Native
+df_ipums_cogs2$NEA_grp[df_ipums_cogs2$RACE %in% 4:6 & !(df_ipums_cogs2$RACED %in% PI_raced) & df_ipums_cogs2$HISPAN == 0] <- 4 # Non-hispanic Asian
+df_ipums_cogs2$NEA_grp[df_ipums_cogs2$RACE == 6 & df_ipums_cogs2$RACED %in% PI_raced & df_ipums_cogs2$HISPAN == 0] <- 5 # Non-Hispanic Pacific Islander
+df_ipums_cogs2$NEA_grp[df_ipums_cogs2$RACE %in% 7:9 & df_ipums_cogs2$HISPAN == 0] <- 6 # Non-Hispanic Mixed/Other
+df_ipums_cogs2$NEA_grp[df_ipums_cogs2$HISPAN != 0] <- 7 # Hispanic
+
+for (i in 1:length(cities)) {
+  # subset to city of interest
+  df_sub <- df_ipums_cogs2[df_ipums_cogs2$CITY == cities[i],]
+  
+  # using the city population for that city to generate a proportion
+  df_sub$PROP <- df_sub$PERWT/(df_sub$CITYPOP*100)
+  
+  # generating proportion vector
+  prop_vec <- rep(0, 7)
+  for (j in 1:length(prop_vec)) {
+    prop_vec[j] <- sum(df_sub$PROP[df_sub$NEA_grp == j])
+  }
+  
+  # calculting multigroup entropy
+  df_res$Diversity_idx[i] <- mult_ent(prop_vec)  
+  
+}
+
+df_res$NEA_Diversity_idx <- c(1.28,1.42,1.24,1.10)
+
+# displaying results
+View(df_res)
+
+
+```
+

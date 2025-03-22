@@ -1,0 +1,399 @@
+---
+title: "32. COGS2 Proportion Deviations Setup"
+author: "Daniel Zoleikhaeian"
+date: "2023-05-22"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+```
+
+# Census Data and Proportions
+
+## Datasets
+```{r}
+dat_2010 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2010.xlsx')
+dat_2020 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2020.xlsx')
+
+dat_2010_races <- dat_2010[,2:8]
+dat_2020_races <- dat_2020[,2:8]
+
+sum(dat_2010[dat_2010$City == 'Los Angeles, CA', 2:8])
+dat_2010
+
+rownames(dat_2010_races) <- dat_2010$City
+rownames(dat_2020_races) <- dat_2020$City
+#View(dat_2010_races)
+```
+
+## Making proportions
+```{r}
+
+# Making proportions
+prop_2010 <- as.data.frame(t(apply(dat_2010_races, MARGIN = 1, function(x) {x / sum(x)}, simplify = T)))
+
+# Making a city column
+prop_2010$City <- rownames(prop_2010)
+prop_2010 <- prop_2010[, c(ncol(prop_2010), 1:(ncol(prop_2010) - 1))]
+rownames(prop_2010) <- NULL
+
+# reformatting the City vector
+prop_2010$City <- lapply(prop_2010$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+# Adding a Year column
+prop_2010$Year <- rep(2010, nrow(prop_2010))
+
+prop_2020 <- as.data.frame(t(apply(dat_2020_races, MARGIN = 1, function(x) {x / sum(x)}, simplify = T)))
+
+prop_2020$City <- rownames(prop_2020)
+prop_2020 <- prop_2020[, c(ncol(prop_2020), 1:(ncol(prop_2020) - 1))]
+rownames(prop_2020) <- NULL
+
+prop_2020$City <- lapply(prop_2020$City, function (x)  {substr(x, 1, unlist(gregexpr(',', x))[1] - 1)}  )
+
+prop_2020$Year <- rep(2020, nrow(prop_2020))
+
+# stacking the dataframes on top of each other
+prop_2010_2020 <- rbind(prop_2010, prop_2020)
+
+# checking if the rows are equal
+nrow(prop_2010_2020) == (nrow(prop_2010) + nrow(prop_2020))
+
+# standardizing acronyms
+colnames(prop_2010_2020)[colnames(prop_2010_2020) == 'NA'] <- 'AE'
+colnames(prop_2010_2020)[colnames(prop_2010_2020) == 'PI'] <- 'NH'
+```
+
+## Loading Dataset
+```{r}
+us_data <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+head(us_data)
+us_data$cEnrollmentYear <- substr(us_data$cEnrollmentDateYear, 1,4)
+
+# Combining OT/UNK and UNK into OT/UNK
+us_data$cRace[us_data$cRace %in% c('UNK', 'OT/UNK')] <- 'OT'
+cogs2 <- us_data[us_data$cStudy == 'COGS2', ]
+
+```
+
+## Pipeline for calculating proportions over time - not cumulative
+* Modified from previous to account for cities
+```{r}
+props_over_time <- function(studies, city) {
+  
+  # make dataframe to store results
+  prop_res <- data.frame(Race = c('AA', 'AE', 'AS', 'CA', 'MR', 'NH', 'OT'),
+                         y2010 = rep(0, 7),
+                         y2011 = rep(0, 7),
+                         y2012 = rep(0, 7),
+                         y2013 = rep(0, 7),
+                         y2014 = rep(0, 7),
+                         y2015 = rep(0, 7),
+                         y2016 = rep(0, 7),
+                         y2017 = rep(0, 7),
+                         y2018 = rep(0, 7),
+                         y2019 = rep(0, 7),
+                         y2020 = rep(0, 7))
+  
+  # Subsetting the merged dataset to the study of interest
+  year_vec <- 2010:2020
+  us_data_sub <- us_data[us_data$cStudy %in% studies & us_data$cLocationCity == city, ]
+  for (i in 1:length(year_vec)) {
+    us_data_sub2 <- us_data_sub[us_data_sub$cEnrollmentYear == year_vec[i], ]
+    
+    # Counting the races
+    race_counts <- plyr::count(us_data_sub2, 'cRace')
+    race_counts$prop <- race_counts$freq / sum(race_counts$freq)
+    
+    # Adding missing races
+    miss_race <- prop_res$Race[!(prop_res$Race %in% race_counts$cRace)]
+    
+    if (length(miss_race) != 0) {
+      race_counts <- rbind(race_counts, data.frame(cRace = miss_race, 
+                                                 freq =  rep(0,length(miss_race)),
+                                                 prop = rep(0,length(miss_race))))
+    }
+    
+    
+    # reordering the dataframe 
+    race_counts <- race_counts[order(race_counts$cRace), ]
+    
+  
+  # Adding to dataframe
+    prop_res[, i + 1] <- race_counts$prop
+  }
+  return (prop_res)
+}
+```
+
+## Pipeline for calculating proportions over time - cumulative
+* Modified from previous to account for cities
+```{r}
+props_over_timeC <- function(studies, city) {
+  
+  # make dataframe to store results
+  prop_res <- data.frame(Race = c('AA', 'AE', 'AS', 'CA', 'MR', 'NH', 'OT'),
+                         y2010 = rep(0, 7),
+                         y2011 = rep(0, 7),
+                         y2012 = rep(0, 7),
+                         y2013 = rep(0, 7),
+                         y2014 = rep(0, 7),
+                         y2015 = rep(0, 7),
+                         y2016 = rep(0, 7),
+                         y2017 = rep(0, 7),
+                         y2018 = rep(0, 7),
+                         y2019 = rep(0, 7),
+                         y2020 = rep(0, 7))
+  
+  # Subsetting the merged dataset to the study and city of interest
+  year_vec <- 2010:2020
+  us_data_sub <- us_data[us_data$cStudy %in% studies & us_data$cLocationCity == city, ]
+
+  cumulative_count <- rep(0, 7)
+  for (i in 1:length(year_vec)) {
+    us_data_sub2 <- us_data_sub[us_data_sub$cEnrollmentYear <= year_vec[i], ]
+    
+    # Counting the races
+    race_counts <- plyr::count(us_data_sub2, 'cRace')
+    
+    race_counts$prop <- race_counts$freq / sum(race_counts$freq)
+    
+    # Adding missing races
+    miss_race <- prop_res$Race[!(prop_res$Race %in% race_counts$cRace)]
+    
+    if (length(miss_race) != 0) {
+      race_counts <- rbind(race_counts, data.frame(cRace = miss_race, 
+                                                 freq =  rep(0,length(miss_race)),
+                                                 prop = rep(0,length(miss_race))))
+    }
+    
+    
+    # reordering the dataframe 
+    race_counts <- race_counts[order(race_counts$cRace), ]
+    
+    cumulative_count <- cumulative_count + race_counts$freq
+    names(cumulative_count) <- race_counts$cRace
+    
+  # Adding to dataframe
+    prop_res[, i + 1] <- cumulative_count / max(c(sum(cumulative_count),1))
+  }
+  return (prop_res)
+}
+```
+
+## Function to help plot cities
+```{r}
+plot_studyxcity <- function(fun_obj, study, city, col_pal, cum_spec = '') {
+  plot(NA, xlim = c(2010,2015), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = paste(study, ' ',city, ': ', cum_spec, ' ', 'Race Proportions over Time', sep = ''))
+  grid()
+  plot_obj <- fun_obj(study, city)
+  
+  for (i in 1:nrow(plot_obj)) {
+    lines(2010:2020, plot_obj[i,2:ncol(plot_obj)], col = col_pal[i], lwd = 1.4)
+  }
+
+  legend('top',
+         legend = plot_obj$Race,
+         col = col_pal,
+         lwd = 1.4,
+         lty = 1, horiz = T,
+         cex = 0.65)
+}
+```
+
+## COGS2: Proportion over Time- total
+```{r}
+my_colors <- c('black', '#F8766D', '#85AD00', '#00A5FF', '#CF9400', '#FF689F', '#80796BFF')
+
+
+plot(NA, xlim = c(2010,2015), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'COGS2: Race Proportions over Time')
+grid()
+
+
+cogs2_obj <- props_over_time('COGS2')
+
+for (i in 1:nrow(cogs2_obj)) {
+  lines(2010:2020, cogs2_obj[i,2:ncol(cogs2_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = cogs2_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+```
+
+### COGS2: Proportion over Time by City
+```{r}
+
+cogs2_cities <- unique(cogs2$cLocationCity)
+for (i in 1:length(cogs2_cities)) {
+  plot_studyxcity(props_over_time, 'COGS2', cogs2_cities[i], my_colors)
+}
+
+```
+
+## COGS2: Cumulative Proportion over Time
+```{r}
+plot(NA, xlim = c(2010,2020), ylim = c(0,1),
+     xlab = 'Year', ylab = 'Proportion',
+     main = 'COGS2: Cumulative Race Proportions over Time')
+grid()
+
+cogs2_obj <- props_over_timeC('COGS2')
+
+for (i in 1:nrow(cogs2_obj)) {
+  lines(2010:2020, cogs2_obj[i,2:ncol(cogs2_obj)], col = my_colors[i], lwd = 1.4)
+}
+
+legend('top',
+       legend = cogs2_obj$Race,
+       col = my_colors,
+       lwd = 1.4,
+       lty = 1, horiz = T,
+       cex = 0.65)
+
+
+```
+
+### COGS2:Cumulative Proportion over Time by City
+```{r}
+for (i in 1:length(cogs2_cities)) {
+  plot_studyxcity(props_over_timeC, 'COGS2', cogs2_cities[i], my_colors, cum_spec='Cumulative')
+}
+```
+
+## Generating Observed-Expected Information
+
+### Making lm objects for each cogs2 city and each race
+```{r}
+
+## subsetting the proportions dataframe for only the cogs2 cities
+cogs_10_20 <- prop_2010_2020[prop_2010_2020$City %in% cogs2_cities, ]
+
+races <- sort(unique(cogs2$cRace))
+
+lm_objects <- vector("list", length(cogs2_cities))
+for (i in 1:length(lm_objects)) {
+  em_list <- vector("list", length(races))
+  names(em_list) <- races
+  lm_objects[[i]] <- em_list
+}
+lm_objects
+
+names(lm_objects) <- cogs2_cities
+  
+
+for (i in 1:length(cogs2_cities)) {
+  for (j in 1:length(races)) {
+    lm_obj <- lm(as.formula(paste0(races[j], "~ Year")), data = cogs_10_20[cogs_10_20$City == cogs2_cities[i], ])
+    lm_objects[[i]][[j]] <- lm_obj
+  }
+}
+
+# Setting all the names
+# names(lm_objects$`San Diego`) <- races
+# names(lm_objects$`Los Angeles`) <- races
+# names(lm_objects$`Philadelphia`) <- races
+# names(lm_objects$`Seattle`) <- races
+# names(lm_objects$`New York`) <- races
+lm_objects
+
+```
+
+### Calculating the 2010-2014 expected proportions based on LM results
+```{r}
+
+# empty list to hold all the dataframes for each city
+exp_props_list <- vector(mode='list', length = length(cogs2_cities))
+names(exp_props_list) <- cogs2_cities
+exp_props_list
+
+
+# check years 2010-2014
+years_in <- 2010:2014
+
+
+for(i in 1:length(cogs2_cities)) {
+  # dataframe structure
+  exp_props <- data.frame(Race = races, 
+                        y2010 = rep(0, length(races)),
+                        y2011 = rep(0, length(races)),
+                        y2012 = rep(0, length(races)),
+                        y2013 = rep(0, length(races)),
+                        y2014 = rep(0, length(races)))
+  # iterate through all the races, then fill in the data
+  for (j in 1:nrow(exp_props)) {
+    exp_props[j, 2:ncol(exp_props)] <- predict(lm_objects[[i]][[j]], newdata = data.frame(Year = years_in))
+    
+  # then place in the list
+  }
+  exp_props_list[[i]] <- exp_props
+  
+}
+exp_props_list
+```
+
+### Helper function: Diversity index
+Source: https://www2.census.gov/programs-surveys/demo/about/housing-patterns/multigroup_entropy.pdf
+
+```{r}
+mult_ent <- function(race_prop_vec) {
+  
+  tot <- 0
+  
+  for (i in 1:length(race_prop_vec)) {
+    if (race_prop_vec[i] != 0) {
+      tot <- tot + race_prop_vec[i] * log(1/race_prop_vec[i])
+    }
+  }
+  return(tot)
+}
+```
+
+### Generating the diversity index scores
+```{r}
+
+div <- c(Race = 'Diversity Index')
+
+div_idxs <- data.frame(City = cogs2_cities,
+                       y2010 = rep(0,length(cogs2_cities)),
+                       y2011 = rep(0, length(cogs2_cities)),
+                       y2012 = rep(0, length(cogs2_cities)),
+                       y2013 = rep(0, length(cogs2_cities)),
+                       y2014 = rep(0, length(cogs2_cities)))
+
+for (i in 1:length(exp_props_list)) {
+  div_idxs[i, 2:ncol(div_idxs)] <- apply(exp_props_list[[i]][,2:ncol(exp_props_list[[i]])], MARGIN = 2, mult_ent)
+  rbind_vec <- c(div,apply(exp_props_list[[i]][,2:ncol(exp_props_list[[i]])], MARGIN = 2, mult_ent))
+  exp_props_list[[i]] <- rbind(exp_props_list[[i]], rbind_vec)
+}
+
+## Table of Diversity Indices
+div_idxs
+
+write.csv(div_idxs, 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\diversity_idxs_cogs2.csv', row.names = F)
+```
+
+
+
+
+```{r}
+
+```

@@ -1,0 +1,105 @@
+---
+title: "33. Checking IPUMS download"
+author: "Daniel Zoleikhaeian"
+date: "2023-05-24"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+## 2010 IPUMS data
+df <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\usa_00002.csv')
+head(df)
+
+df_additional<- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+# head(df_additional)
+
+df_additional$cEnrollmentYear <- substr(df_additional$cEnrollmentDateYear, 1,4)
+unique(df_additional$cEnrollmentYear) # get from 2008 to 2020 from ACS
+
+# showing that city populations match up
+LA <- df$CITYPOP[df$CITY == 3730 & df$YEAR == 2010][1]
+LA * 100
+
+1917672 +	1879472 # this is the data from the excel sheet i've been using
+
+colnames(df)
+
+unique(df$RACED)
+```
+
+Things to Note:
+
+* Could not find mutually exclusive race/ethnicity categories for total data
+  - only found them for samples from each year
+* IPUMS USA has easily accessible 1-year sample data
+  - They track mutually exclusive categories via HISPAN and RACE identifiers for each "individual"
+  - Each individual has a "weight", which states how many individuals this person represents in the total population
+    * Will treat as multiplier
+
+
+## Caveats from IPUMS database
+* City populations are rounded to the nearest hundred
+  - Uses information from the Decennial census where possible
+  - Otherwise, uses the ACS survey data
+* RACHSING variable already puts people into mutually exclusive categories
+- but combines Asian and Pacific Islander into one category
+- Assigns Hispanic of any race (including multiracial) to Hispanic
+- Assigns Non-hispanic multiracial people to a single category
+  * Does this by inference. Predicted the race of an indidivual based on their age, sex, region, and the urbanization level and racial diversity of their data district. See documentation text in html file. 
+  * Suggestion: don't use RACHSING variable
+
+## Suggested variables to use from IPUMS
+* YEAR
+* CITY
+* CITYPOP
+* RACE
+* HISPAN
+
+## RACE Information
+```{r}
+race_df <- data.frame(Value = 1:9,
+                      Label = c('White', 'Black/African American', 'American Indian or Alaska Native', 'Chinese', 'Japanese', 'Other Asian or Pacific Islander', 'Other race', 'Two major races', 'Three or more major races'))
+knitr::kable(race_df)
+```
+
+Suggestions:
+
+* Combine Asian and Pacific Islander into one category
+  - Alternative: use RACED variable to separate Asian and Pacific Islander
+  - May have to go in one by one to assign each ethnicity to Asian or Pacific Islander (See documentation)
+* Combine Mixed race/Other race into one category (National Equity Atlas does this)
+
+## HISPAN Information
+```{r}
+hispan_df <- data.frame(Value = c(0:4, 9),
+                        Label = c('Not Hispanic', 'Mexcian', 
+                                  'Puerto Rican', 'Cuban', 'Other',
+                                  'Not Reported'))
+knitr::kable(hispan_df)
+```
+
+Suggestions:
+
+* Combine "Not Reported" with "Not Hispanic"
+* Combine all else into "Hispanic"
+
+## Suggested Race/Ethnicity Categories moving forward
+* Non-Hispanic (NH) White
+* NH Asian/Pacific Islander
+  - Note: National Equity Atlas has separate category for Pacific Islander
+* NH African American
+* NH Native American/Alaska Native
+* NH Mixed/Other
+* Hispanic
+
+
+

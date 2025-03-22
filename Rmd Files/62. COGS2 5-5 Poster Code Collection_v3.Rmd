@@ -1,0 +1,1030 @@
+---
+title: "62. COGS2 5-5 Poster Code Collection"
+author: "Daniel Zoleikhaeian"
+date: "2023-09-30"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Setup
+* Importing Data
+* Helper functions
+* Group code manipulations
+
+## Importing COGS2 data
+```{r}
+library(grid)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(Hmisc)
+library(kableExtra)
+library(tableHTML)
+
+
+df_COGS2 <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_060723.csv')
+df_COGS2 <- df_COGS2[df_COGS2$cStudy == 'COGS2', ]
+nrow(df_COGS2)
+
+head(df_COGS2)
+# adding year column
+df_COGS2$cEnrollmentYear <- as.numeric(substr(df_COGS2$cEnrollmentDateYear, 1,4))
+head(df_COGS2)
+
+unique(df_COGS2$cRace)
+
+# re-encoding OT/UNK/MR into one group
+df_COGS2$cRace2 <- df_COGS2$cRace
+df_COGS2$cRace2[df_COGS2$cRace2 %in% c('OT', 'OT/UNK', 'MR', 'UNK')] <- 'OT/MR'
+nrow(df_COGS2)
+```
+
+## Importing ACS data
+```{r}
+df_acs <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\acs_1014_complete.csv')
+```
+
+## Helper function: Transforming by dictionary
+```{r}
+dict_transform <- function(keys, values, vec) {
+  for (i in 1:length(keys)) {
+    vec[vec == keys[i]] <- values[i]
+  }
+  return (vec)
+}
+```
+
+## Group code manipulations
+```{r}
+group_codes_df <- data.frame(Race2 = rep(c('AA', 'AE', 'AS','CA','NH','OT/MR'), rep(4,6)),
+                             Hispan2 = rep(rep(c('No','Yes'), c(2,2)), 6),
+                             Gender = rep(c('F','M'), 12),
+                             group_code = 1:24)
+
+group_code_gen <- function(df, handbook) {
+  df$group_code <- rep(0,nrow(df))
+  for (n in 1:nrow(df)) {
+    for (i in 1:nrow(handbook)) {
+      if (df[n,1] == handbook[i,1] &&
+          df[n,2] == handbook[i,2] &&
+          df[n,3] == handbook[i,3]) {
+        df$group_code[n] <- handbook$group_code[i]
+        break
+      } else {
+        next
+      }
+    }
+  }
+  return (df)
+}
+
+group_code_inverse <- function(df, handbook) {
+  df <- cbind(handbook[handbook$group_code %in% df$group_code, 1:3], df)
+  return(df)
+}
+```
+
+# Simulation-relevant functions
+
+## Pool generator function
+* Combines all the ACS data into one "pooled megacity"
+* This would be as if all the sites in COGS2 were combined into one megacity
+- Weighted in accordance to how many people from each city were found in COGS2
+- methodology: population from city in COGS2 / population from city in ACS = scaling factor for person weight
+```{r}
+pool_gen2 <- function(Diag4, cogs_data, acs_data, grp_codes_df) {
+  
+  if (Diag4 == 'All') {
+    city_counts <- plyr::count(cogs_data, 'cLocationCity')
+    cogs_data_diag <- cogs_data
+  } else {
+    city_counts <- plyr::count(cogs_data[cogs_data$cDiagnosis4 == Diag4, ], 'cLocationCity')
+    cogs_data_diag <- cogs_data[cogs_data$cDiagnosis4 == Diag4,]
+  }
+  city_counts$prop <- city_counts$freq / sum(city_counts$freq)
+  
+  cogs_codes <- sort(unique(acs_data$CITY))
+  
+  # reweighting all the person weights by the frequencies found in COGS 
+  for (i in 1:length(cogs_codes)) {
+    acs_data$PERWT_Diag[acs_data$CITY == cogs_codes[i]] <- acs_data$PERWT[acs_data$CITY == cogs_codes[i]] * city_counts$prop[i]
+    acs_data$cogs_exp_prop[acs_data$CITY == cogs_codes[i]] <- acs_data$PERWT_Diag[acs_data$CITY == cogs_codes[i]] / sum(acs_data$PERWT[acs_data$CITY == cogs_codes[i]]) 
+  }
+  
+  # counting the reweighted numerator
+  pool <- plyr::count(acs_data, c('Race2', 'Hispan2', 'SEX'), wt_var = 'cogs_exp_prop')
+  
+  pool$Race2 <- dict_transform(c(1:6),c('CA', 'AA', 'AE','AS','NH','OT/MR'), pool$Race2)
+  pool$Hispan2 <- dict_transform(c(0,1), c('No', 'Yes'), pool$Hispan2)
+  pool$SEX <- dict_transform(c(1,2),c('M','F'), pool$SEX)
+  pool <- pool[order(pool$Race2,pool$Hispan2,pool$SEX),]
+  
+  pool <- group_code_gen(pool, grp_codes_df)
+  
+ 
+  cogs_counts <- plyr::count(cogs_data_diag, c('cRace2', 'cHispanicorLatino', 'cGender'))
+  cogs_counts$props <- cogs_counts$freq / sum(cogs_counts$freq)
+  cogs_counts <- group_code_gen(cogs_counts, grp_codes_df)
+  
+  pool <- pool[pool$group_code %in% intersect(pool$group_code, cogs_counts$group_code),]
+  colnames(pool)[4] <- 'prop'
+  
+  return (pool) 
+}
+
+t2 <- pool_gen2('CS', df_COGS2, df_acs, group_codes_df)
+
+```
+
+## Sampling Algorithm
+```{r}
+sampling_algorithm <- function(cogs_og, pool_df, scale_factor, thresh, n_iter, do_print = FALSE, suppress_df = TRUE) {
+  # making a copy of the original cogs data
+  # this copy will be updated in each pass
+  cogs_counts_updated <- cogs_og[, c('group_code', 'freq', 'props')]
+  cogs_counts_updated$freq_og <- cogs_og$freq
+  cogs_counts_updated$props_og <- cogs_og$props
+  cogs_counts_updated$props_target <- pool_df$prop
+  cogs_counts_updated <- cogs_counts_updated[, c('group_code', 'freq', 'freq_og','props_og','props_target','props')]
+
+  n_steps <- 0
+  size_arg <- sum(cogs_og$freq) * scale_factor
+  
+  # start loop here
+  
+  
+  number_rejected <- data.frame(group_code = cogs_og$group_code,
+                                  n = rep(0, nrow(cogs_og)))          
+  
+  for (N in 1:n_iter) {
+    
+    # check stop condition: if all the new proportions are within 0.05 of the acs proportions, then stop
+    if (all(cogs_counts_updated$props >= (pool_df$prop - thresh)&
+    cogs_counts_updated$props <= pool_df$prop + thresh)) {
+    # if (all(((cogs_counts_updated$props - pool_df$prop) / pool_df$prop) < thresh)) {
+      if (do_print) {cat('Number of steps:', n_steps, '\n')}
+      break
+    }
+  
+    
+    
+    # Methodology: sample from the group_codes based on the proportion found in the original cogs_counts
+    
+    sam <- sample(x = cogs_og$group_code, size = size_arg, prob = cogs_og$props, replace = TRUE)
+    sam_counts <- plyr::count(sam)
+    
+    # verifying that all the group codes are in the right order
+    # all(cogs_og$group_code == pool_df$group_code)
+    
+    # number_rejected <- data.frame(group_code = cogs_og$group_code,
+    #                               n = rep(0, nrow(cogs_og)))
+    # for each group code in cogs_counts
+    for (i in 1:nrow(cogs_counts_updated)) {
+      
+      # first check if the group was in the sample
+      if (any(cogs_counts_updated$group[i] %in% sam_counts$x)) {
+        # check whether the category is currently overrepresented
+        # if it is, then don't touch it
+        if (cogs_counts_updated$props[i] > pool_df$prop[i]) {
+          # update the number rejected
+          # but don't update the counts
+        # if (((cogs_counts_updated$props[i] - pool_df$prop[i]) / pool_df$prop[i]) >= thresh) {
+          number_rejected$n[number_rejected$group_code == cogs_counts_updated$group_code[i]] <- number_rejected$n[number_rejected$group_code == cogs_counts_updated$group_code[i]] + sam_counts$freq[sam_counts$x == cogs_counts_updated$group_code[i]]
+          
+        } else {
+          # the add the people to the sample
+          cogs_counts_updated$freq[i] <- cogs_counts_updated$freq[i] + sam_counts$freq[sam_counts$x == cogs_counts_updated$group_code[i]] 
+        }
+      }
+    }
+    
+    # update the proportions
+    cogs_counts_updated$props <- cogs_counts_updated$freq / sum(cogs_counts_updated$freq)
+    
+    # update the number of iterations
+    n_steps <- n_steps + 1
+  }
+  
+  if (N == n_iter && do_print) {
+    cat('Did not converge in', n_steps, 'steps.\n')
+  }
+  
+  if (suppress_df) {
+    return(n_steps) 
+  } else {
+    return (list(cogs_counts_updated, number_rejected, n_steps))
+  }
+}
+```
+# Hypothesis testing for the pools
+
+## CS
+```{r}
+# getting proportions for the categories from COGS2 data
+prop_ct_cs <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'CS',], c('cRace2', 'cHispanicorLatino', 'cGender'))
+prop_ct_cs$props <- prop_ct_cs$freq / sum(prop_ct_cs$freq)
+prop_ct_cs <- group_code_gen(prop_ct_cs, group_codes_df)
+
+# Generating the CS pool
+pool_cs <- pool_gen2('CS', df_COGS2, df_acs, group_codes_df)
+
+all(prop_ct_cs$group_code == pool_cs$group_code)
+
+# Checking if some group codes are not present between the pool and COGS2
+pool_cs[pool_cs$group_code %in% setdiff(pool_cs$group_code, prop_ct_cs$group_code),] # there are no missing codes
+
+setdiff(prop_ct_cs$group_code, pool_cs$group_code) # there are no missing codes
+
+df_comparison_cs <- cbind(prop_ct_cs, pool_cs$prop)
+df_comparison_cs$group_code <- NULL
+df_comparison_cs$sam_over <- ifelse(prop_ct_cs$props > pool_cs$prop, 'Over','-')
+df_comparison_cs$sam_under <- ifelse(prop_ct_cs$props < pool_cs$prop, 'Under','-')
+
+sig_res_p_vals_cs <- rep(0, nrow(df_comparison_cs))
+for (i in 1:nrow(df_comparison_cs)) {
+  test_obj <- binom.test(df_comparison_cs$freq[i], n = sum(prop_ct_cs$freq), p = df_comparison_cs$`pool_cs$prop`[i], alternative = 'two.sided')
+  sig_res_p_vals_cs[i] <- test_obj$p.value
+}
+
+sig_res_p_vals_cs
+
+# adjusting for multiple comparisons
+holm_corr_cs <- p.adjust(sig_res_p_vals_cs, "holm")
+holm_corr_cs
+
+sig_desig_cs <- ifelse(holm_corr_cs < 0.05, '**', '-')
+sig_desig_cs
+
+
+df_comparison_cs$significance <- sig_desig_cs
+df_comparison_cs$holm_pval <- holm_corr_cs
+View(df_comparison_cs)
+df_comparison_cs$holm_pval <- format(df_comparison_cs$holm_pval, scientific = TRUE, digits = 3)
+
+# changing the column names to be more recognizable
+colnames(df_comparison_cs)
+colnames(df_comparison_cs) <- c('Race', 'Hispanic/Latino', 'Gender', 'COGS2\nCount', 'COGS2\nProportion', 'ACS\n Proportion', 'Sam_over', 'Sam_under', 'Significance', 'Holm-corrected\np-value')
+
+View(df_comparison_cs)
+
+df_comparison_cs$`Sampling Trend` <- rep('-', nrow(df_comparison_cs))
+df_comparison_cs$`Sampling Trend`[df_comparison_cs$Sam_over == 'Over'] <- 'Over'
+df_comparison_cs$`Sampling Trend`[df_comparison_cs$Sam_under == 'Under'] <- 'Under'
+
+colnames(df_comparison_cs)
+
+df_comparison_cs <- df_comparison_cs[, c('Race', 'Hispanic/Latino', 'Gender', 'COGS2\nCount', 'COGS2\nProportion', 'ACS\n Proportion', 'Sampling Trend', 'Significance', 'Holm-corrected\np-value')]
+View(df_comparison_cs)
+
+# exporting the table
+# png('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\CS_hyp_test2.png', height = 50*nrow(df_comparison_cs), width = 200*ncol(df_comparison_cs))
+# grid.table(df_comparison_cs)
+# dev.off()
+```
+
+## SZ
+```{r}
+# getting proportions for the categories from COGS2 data
+prop_ct_sz <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'SZSAFD',], c('cRace2', 'cHispanicorLatino', 'cGender'))
+prop_ct_sz$props <- prop_ct_sz$freq / sum(prop_ct_sz$freq)
+prop_ct_sz <- group_code_gen(prop_ct_sz, group_codes_df)
+
+# Generating the CS pool
+#pool_sz <- pool_gen('SZSAFD', df_COGS2, df_acs, group_codes_df)
+pool_sz <- pool_gen2('SZSAFD', df_COGS2, df_acs, group_codes_df)
+
+all(prop_ct_sz$group_code == pool_sz$group_code)
+
+# Checking if some group codes are not present between the pool and COGS2
+pool_sz[pool_sz$group_code %in% setdiff(pool_sz$group_code, prop_ct_sz$group_code),] # there are no missing codes
+
+setdiff(prop_ct_sz$group_code, pool_sz$group_code) # there are no missing codes
+
+df_comparison_sz <- cbind(prop_ct_sz, pool_sz$prop)
+df_comparison_sz$group_code <- NULL
+df_comparison_sz$sam_over <- ifelse(prop_ct_sz$props > pool_sz$prop, 'Over','-')
+df_comparison_sz$sam_under <- ifelse(prop_ct_sz$props < pool_sz$prop, 'Under','-')
+
+sig_res_p_vals_sz <- rep(0, nrow(df_comparison_sz))
+for (i in 1:nrow(df_comparison_sz)) {
+  test_obj <- binom.test(df_comparison_sz$freq[i], n = sum(prop_ct_sz$freq), p = df_comparison_sz$`pool_sz$prop`[i], alternative = 'two.sided')
+  sig_res_p_vals_sz[i] <- test_obj$p.value
+}
+
+sig_res_p_vals_sz
+
+# adjusting for multiple comparisons
+holm_corr_sz <- p.adjust(sig_res_p_vals_sz, "holm")
+holm_corr_sz
+
+sig_desig_sz <- ifelse(holm_corr_sz < 0.05, '**', '-')
+sig_desig_sz
+
+
+df_comparison_sz$significance <- sig_desig_sz
+df_comparison_sz$holm_pval <- holm_corr_sz
+
+df_comparison_sz$holm_pval <- format(df_comparison_sz$holm_pval, scientific = TRUE, digits = 3)
+View(df_comparison_sz)
+
+# changing the column names to be more recognizable
+colnames(df_comparison_sz)
+colnames(df_comparison_sz) <- c('Race', 'Hispanic/Latino', 'Gender', 'COGS2\nCount', 'COGS2\nProportion', 'ACS\n Proportion', 'Sam_over', 'Sam_under', 'Significance', 'Holm-corrected\np-value')
+
+View(df_comparison_sz)
+
+df_comparison_sz$`Sampling Trend` <- rep('-', nrow(df_comparison_sz))
+df_comparison_sz$`Sampling Trend`[df_comparison_sz$Sam_over == 'Over'] <- 'Over'
+df_comparison_sz$`Sampling Trend`[df_comparison_sz$Sam_under == 'Under'] <- 'Under'
+
+colnames(df_comparison_sz)
+
+df_comparison_sz <- df_comparison_sz[, c('Race', 'Hispanic/Latino', 'Gender', 'COGS2\nCount', 'COGS2\nProportion', 'ACS\n Proportion', 'Sampling Trend', 'Significance', 'Holm-corrected\np-value')]
+View(df_comparison_sz)
+
+# exporting the table
+# png('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\SZ_hyp_test2.png', height = 50*nrow(df_comparison_sz), width = 200*ncol(df_comparison_sz))
+# grid.table(df_comparison_sz)
+# dev.off()
+```
+
+## Combining the two tables
+```{r}
+
+# Keep: sampling trend, p-value, demographic codes
+# Combine the significance codes with the p-values at the end
+
+# Combining the significance codes with the p-values
+
+comp_cs_tr <- df_comparison_cs[, c('Race', 'Hispanic/Latino', 'Gender', 'Sampling Trend', 'Significance', 'Holm-corrected\np-value')]
+comp_cs_tr$Significance[comp_cs_tr$Significance == '-'] <- '-'
+
+comp_cs_tr$`p-value` <- paste(as.character(comp_cs_tr[, 6]), comp_cs_tr[,5], sep = '')
+#comp_cs_tr$`p-value`[comp_cs_tr$`p-value` == '1.00e+00'] <- '>0.999'
+
+# cleaning up data frame
+comp_cs_tr$Significance <- NULL
+comp_cs_tr$`Holm-corrected\np-value` <- NULL
+colnames(comp_cs_tr)[4] <- 'HCS Sampling Trend'
+
+View(comp_cs_tr)
+
+comp_sz_tr <- df_comparison_sz[, c('Race', 'Hispanic/Latino', 'Gender', 'Sampling Trend', 'Significance', 'Holm-corrected\np-value')]
+comp_sz_tr$Significance[comp_sz_tr$Significance == '-'] <- '-'
+
+comp_sz_tr$`p-value` <- paste(as.character(comp_sz_tr[, 6]), comp_sz_tr[,5], sep = '')
+#comp_sz_tr$`p-value`[comp_sz_tr$`p-value` == '1.00e+00'] <- '>0.999'
+
+# cleaning up data frame
+comp_sz_tr$Significance <- NULL
+comp_sz_tr$`Holm-corrected\np-value` <- NULL
+colnames(comp_sz_tr)[4] <- 'SZ Sampling Trend'
+
+View(comp_sz_tr)
+
+
+# combining the two dataframes into one
+
+# Exporting the dataframes
+# write.csv(comp_cs_tr, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\hyp_cs1016.csv', row.names = FALSE)
+# write.csv(comp_sz_tr, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\hyp_sz1016.csv', row.names = FALSE)
+
+# reading in the combined dataframe
+library(readxl)
+comp_df <- read_excel('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\hyp_test1016.xlsx', col_types = 'text')
+View(comp_df)
+
+comp_df2 <- comp_df %>% replace(is.na(.), '-')
+comp_df2[comp_df2 == '1.00e+00'] <- '<0.999'
+
+
+View(comp_df2)
+
+comp_df3 <- group_code_gen(comp_df2, grp_codes_df)
+View(comp_df3)
+
+comp_df3 <- comp_df3[, c(8, 1:7)]
+View(comp_df3)
+colnames(comp_df3)[1] <- c('Group')
+View(comp_df3)
+
+# Exporting the table
+# png('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\hcs_sz_comp2.png', height = 50*nrow(comp_df2), width = 200*ncol(comp_df2))
+# grid.table(comp_df2)
+# dev.off()
+
+# Exporting the table as a CSV
+#write.csv(comp_df3, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\hyp_test_edited1016.csv', row.names = FALSE)
+```
+
+## Testing HCS vs SZ
+```{r}
+View(prop_ct_sz)
+View(prop_ct_cs)
+
+## insert row function for adding the missing rows to the dataframe
+
+# Edit the hcs dataframe
+in_sz_not_cs <- data.frame(group_code = prop_ct_sz$group_code[!(prop_ct_sz$group_code %in% prop_ct_cs$group_code)])
+
+codes_to_add_to_cs <- group_code_inverse(in_sz_not_cs, grp_codes_df)
+df_0_to_cs <- cbind(codes_to_add_to_cs, data.frame(freq = rep(0,nrow(codes_to_add_to_cs)),
+                                                   props = rep(0,nrow(codes_to_add_to_cs))))
+colnames(df_0_to_cs)[1:3] <- colnames(prop_ct_cs)[1:3]
+colnames(df_0_to_cs)
+
+df_0_to_cs <- df_0_to_cs[,colnames(prop_ct_cs)]
+
+prop_ct_cs2 <- rbind(prop_ct_cs, df_0_to_cs)
+prop_ct_cs2 <- prop_ct_cs2[order(prop_ct_cs2$group_code),]
+prop_ct_cs2
+
+# Same thing but for sz dataframe
+in_cs_not_sz <- data.frame(group_code = prop_ct_cs$group_code[!(prop_ct_cs$group_code %in% prop_ct_sz$group_code)])
+
+codes_to_add_to_sz <- group_code_inverse(in_cs_not_sz, grp_codes_df)
+df_0_to_sz <- cbind(codes_to_add_to_sz, data.frame(freq = rep(0,nrow(codes_to_add_to_sz)),
+                                                   props = rep(0,nrow(codes_to_add_to_sz))))
+colnames(df_0_to_sz)[1:3] <- colnames(prop_ct_sz)[1:3]
+colnames(df_0_to_sz)
+
+df_0_to_sz <- df_0_to_sz[,colnames(prop_ct_sz)]
+
+prop_ct_sz2 <- rbind(prop_ct_sz, df_0_to_sz)
+prop_ct_sz2 <- prop_ct_sz2[order(prop_ct_sz2$group_code),]
+prop_ct_sz2
+
+# Now performing Fishers exact test on the times where both HCS and SZ were different from ACS
+groups_to_test <- c(2,13,15,16,18,21,22,23,24)
+prop_cs_2test <- prop_ct_cs2[prop_ct_cs2$group_code %in% groups_to_test,]
+prop_sz_2test <- prop_ct_sz2[prop_ct_sz2$group_code %in% groups_to_test,]
+
+all.equal(prop_cs_2test$group_code, prop_sz_2test$group_code) # everything is positionally aligned
+
+# Keeping track of the sample totals for cs and sz
+cs_tot <- sum(prop_ct_cs$freq)
+sz_tot <- sum(prop_ct_sz$freq)
+
+# creating the complements
+prop_cs_2test$others <- cs_tot - prop_cs_2test$freq 
+prop_sz_2test$others <- sz_tot - prop_sz_2test$freq
+
+# Now building the for loop for the tests
+res_df <- data.frame(group = groups_to_test,
+                     pval = rep(0,length(groups_to_test)))
+
+for (i in 1:nrow(res_df)) {
+  test_mat <- matrix(c(prop_cs_2test$freq[i],prop_sz_2test$freq[i],
+                       prop_cs_2test$others[i], prop_sz_2test$others[i]), ncol=2)
+  res_df$pval[i] <- fisher.test(test_mat)$p.value
+}
+
+
+sig_ind <- ifelse(res_df$pval < 0.05, '**', '-')
+res_df$significance <- sig_ind
+
+View(res_df)
+
+
+
+
+
+
+```
+
+# Running the Simulations
+
+## CS
+```{r}
+## Finding the Distribution of number of steps for convergence at 0.025 level with resampling 50% of the original sample size
+n_sim <- 1000
+th <- 0.025
+sf <- 0.5
+
+# getting the original counts for cs
+df_COGS2_cs <- df_COGS2[df_COGS2$cDiagnosis4 == 'CS',]
+cogs_counts_cs <- plyr::count(df_COGS2_cs, c('cRace2', 'cHispanicorLatino', 'cGender'))
+cogs_counts_cs$props <- cogs_counts_cs$freq / sum(cogs_counts_cs$freq)
+cogs_counts_cs <- group_code_gen(cogs_counts_cs, group_codes_df)
+cogs_counts_cs
+
+# checking the algorithm
+cs_check <- sampling_algorithm(cogs_og = cogs_counts_cs, pool_df = pool_cs, scale_factor = sf, thresh = th, n_iter = 1000, suppress_df = FALSE)
+
+steps_storage_cs_acs <- rep(0, n_sim)
+start_time <- Sys.time()
+for (i in 1:n_sim) {
+  steps_storage_cs_acs[i] <- sampling_algorithm(cogs_og = cogs_counts_cs, pool_df = pool_cs, scale_factor = sf, thresh = th, n_iter = 1000, suppress_df = TRUE)
+}
+
+end_time <- Sys.time()
+end_time - start_time
+
+# alternate representation
+steps_cs_cts <- plyr::count(steps_storage_cs_acs)
+
+plot(steps_cs_cts$x, steps_cs_cts$freq, main = 'HCS: Number of Resamples\nuntil Convergence', type = 'h', xlab = 'Number of Resamples', ylab = 'Frequency', lty = 1)
+
+
+title(sub = paste('Scale factor:', sf, '\tThreshold:', th), font.sub = 3, col.sub = 'darkgray')
+points(x = steps_cs_cts$x, y = steps_cs_cts$freq, pch = 15)
+minor.tick(nx = 2, ny = 2,   # Ticks density
+           tick.ratio = 0.5)
+grid()
+
+perc_res <- quantile(steps_storage_cs_acs, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+
+sum_stats <- data.frame(Percentile = names(perc_res),
+                        Value = round(unname(perc_res)))
+sum_stats
+
+tbl <- kbl(sum_stats, caption = "Number of Resamples until Convergence for Healthy Control Subjects", table.attr = "style='width:50%;'" ) %>%
+kable_styling(bootstrap_options = "striped", full_width = T, position = "center")
+tbl
+
+
+mean(steps_storage_cs_acs)
+sd(steps_storage_cs_acs)
+```
+
+## SZ
+```{r}
+## Finding the Distribution of number of steps for convergence at 0.025 level with resampling 50% of the original sample size
+
+n_sim <- 1000
+th <- 0.025
+sf <- 0.50
+
+# getting the original counts for cs
+df_COGS2_sz <- df_COGS2[df_COGS2$cDiagnosis4 == 'SZSAFD',]
+cogs_counts_sz <- plyr::count(df_COGS2_sz, c('cRace2', 'cHispanicorLatino', 'cGender'))
+cogs_counts_sz$props <- cogs_counts_sz$freq / sum(cogs_counts_sz$freq)
+cogs_counts_sz <- group_code_gen(cogs_counts_sz, group_codes_df)
+cogs_counts_sz
+
+steps_storage_sz_acs <- rep(0, n_sim)
+start_time <- Sys.time()
+for (i in 1:n_sim) {
+  steps_storage_sz_acs[i] <- sampling_algorithm(cogs_og = cogs_counts_sz, pool_df = pool_sz, scale_factor = sf, thresh = th, n_iter = 1000, suppress_df = TRUE)
+}
+
+end_time <- Sys.time()
+end_time - start_time
+
+# alternate representation
+steps_sz_cts <- plyr::count(steps_storage_sz_acs)
+plot(steps_sz_cts$x, steps_sz_cts$freq, main = 'SZ: Number of Resamples\nuntil Convergence', type = 'h', xlab = 'Number of Resamples', ylab = 'Frequency', lty = 1)
+title(sub = paste('Scale factor:', sf, '\tThreshold:', th), font.sub = 3, col.sub = 'darkgray')
+points(x = steps_sz_cts$x, y = steps_sz_cts$freq, pch = 15)
+minor.tick(nx = 2, ny = 2,   # Ticks density
+           tick.ratio = 0.5)
+grid()
+
+perc_res_sz <- quantile(steps_storage_sz_acs, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+
+sum_stats_sz <- data.frame(Percentile = names(perc_res_sz),
+                        Value = unname(perc_res_sz))
+sum_stats_sz
+
+tbl <- kbl(sum_stats_sz, caption = "Number of Resamples until Convergence for SZ Subjects", table.attr = "style='width:50%;'" ) %>%
+kable_styling(bootstrap_options = "striped", full_width = T, position = "center")
+tbl
+
+
+steps_storage_sz_acs[0.25*1000]
+steps_storage_sz_acs[0.75*1000]
+
+mean(steps_storage_sz_acs)
+sd(steps_storage_sz_acs)
+
+data.frame(means = c(mean(steps_storage_cs_acs), mean(steps_storage_sz_acs)))
+
+59/2
+
+4.57/2
+```
+
+## Combining the above two plots
+```{r}
+
+# rescaling the steps so they represent full resamples
+cs_steps <- data.frame(Resamples = steps_storage_cs_acs/2,
+                       Diagnosis = rep('HCS', length(steps_storage_cs_acs)))
+
+sz_steps <- data.frame(Resamples = steps_storage_sz_acs/2,
+                       Diagnosis = rep('SZ', length(steps_storage_sz_acs)))
+
+steps_both <- rbind(cs_steps, sz_steps)
+
+# p <- steps_both %>%
+#   ggplot( aes(x = Resamples, fill = Diagnosis)) +
+#     geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity') +
+#     scale_fill_manual(values=c("#69b3a2", "#404080")) +
+#     labs(fill='Diagnosis', y = 'Frequency') + ylab('Number of Resamples') + ggtitle('Number of Full Resamples\nuntil Convergence to ACS Proportions') + 
+#   theme(plot.title = element_text(hjust = 0.5))
+
+# p
+
+library(ggbreak)
+library(ggimage)
+p1 <- steps_both %>%
+  ggplot( aes(x = Resamples, fill = Diagnosis)) +
+    geom_histogram( color="#e9ecef", alpha=1, position = 'identity', binwidth=1) +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    labs(fill='Diagnosis', y = 'Frequency') +
+#+ ylab('Number of Simulations') + xlab('Number of Resamples') 
+#+ ggtitle('Number of Full Resamples\nuntil Convergence to ACS Proportions') + 
+  scale_y_log10(breaks = c(1,10,50, 100, 200, 500, 750, 1000), oob = scales::squish_infinite) + 
+  scale_x_continuous(breaks = seq(0,45, 2.5)) +
+  theme(plot.title = element_text(hjust = 0.5,face='bold',size=14), axis.line = element_line(color = 'black'), 
+        legend.key.size = unit(1, 'cm'),
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        legend.title = element_text(size=13), #change legend title font size
+        legend.text = element_text(size=13)) +
+  xlim(0,42.5) 
+  
+
+p2 <- p1 +scale_x_break(c(7,14)) + theme(legend.position = 'none')
+
+leg = cowplot::get_legend(p1)
+
+p3 <- ggplotify::as.ggplot(print(p2))
+
+# grob <- grobTree(textGrob("HCS Median = 2.0\nSZ Median = 28.5", x=0.75,  y=0.80, hjust=0,
+#   gp=gpar(col="black", fontsize=13, fontface="italic")))
+
+library(grid)
+#p3 + ggimage::geom_subview(x=0.42,y=0.77, subview=leg) + annotation_custom(grob)
+p3 + ggimage::geom_subview(x=0.42,y=0.85, subview=leg)
+```
+
+## Combining the two tables for percentiles
+```{r}
+
+perc_res_cs2 <- quantile(steps_storage_cs_acs/2, probs = c(0.025, 0.25, 0.5, 0.75, 0.975), type = 4)
+
+sum_stats_cs2 <- data.frame(Percentile = names(perc_res_cs2),
+                        Value = unname(perc_res_cs2))
+
+perc_res_sz2 <- quantile(steps_storage_sz_acs/2, probs = c(0.025, 0.25, 0.5, 0.75, 0.975), type = 4)
+
+sum_stats_sz2 <- data.frame(Percentile = names(perc_res_sz2),
+                        Value = unname(perc_res_sz2))
+
+combined_perc <- sum_stats_cs2
+combined_perc <- cbind(combined_perc, sum_stats_sz2$Value)
+
+colnames(combined_perc)[2:3] <- c('HCS', 'SZ')
+
+View(combined_perc)
+
+tbl <- kbl(combined_perc, caption = "Number of Resamples until Convergence", table.attr = "style='width:50%;'" ) %>%
+kable_styling(bootstrap_options = "striped", full_width = T, position = "center")
+tbl
+
+```
+
+## SZ to HCS
+
+### Generating the HCS Pool 
+```{r}
+## New pooled target dataframe
+pool_cs <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'CS', ], c('cRace2', 'cHispanicorLatino', 'cGender', 'cLocationCity'))
+# pool_cs$prop <- pool_cs$freq / sum(pool_cs$freq)
+pool_cs$prop <- rep(0, nrow(pool_cs))
+pool_cs
+
+cities <- unique(pool_cs$cLocationCity)
+cities
+
+for(i in 1:length(cities)) {
+  city_sum <- sum(pool_cs$freq[pool_cs$cLocationCity == cities[i]])
+  pool_cs$prop[pool_cs$cLocationCity == cities[i]] <- pool_cs$freq[pool_cs$cLocationCity == cities[i]] / city_sum
+}
+
+pool_cs <- group_code_gen(pool_cs, group_codes_df)
+pool_cs
+
+# updating the proportions to reflect the city weightings for SZ
+sz_cities <- plyr::count(df_COGS2_sz, 'cLocationCity')
+sz_cities$prop <- sz_cities$freq/sum(sz_cities$freq)
+sz_cities
+
+for (i in 1:length(cities)) {
+  pool_cs$prop[pool_cs$cLocationCity == cities[i]] <- pool_cs$prop[pool_cs$cLocationCity == cities[i]] * sz_cities$prop[sz_cities$cLocationCity == cities[i]]
+}
+
+sum(pool_cs$prop)
+```
+
+### Updating the cs pool to exclude unicorns
+```{r}
+setdiff(pool_cs$group_code, cogs_counts_sz$group_code)
+nrow(pool_cs) # 74 rows
+pool_cs <- pool_cs[pool_cs$group_code %in% intersect(pool_cs$group_code, cogs_counts_sz$group_code),]
+nrow(pool_cs) # 73 rows
+
+# adding the missing group codes
+setdiff(pool_cs$group_code, cogs_counts_sz$group_code) # everyone in CS is contained in SZ
+
+# NOTE: there are some individuals that are in SZ that are not in CS
+miss_codes <- setdiff(cogs_counts_sz$group_code, pool_cs$group_code)
+df_miss <- data.frame(group_code = miss_codes,
+                      prop = rep(0, length(miss_codes)))
+pool_cs_complete <- rbind(pool_cs[, c('group_code', 'prop')], df_miss)
+pool_cs_complete <- pool_cs_complete[order(pool_cs_complete$group_code),]
+rownames(pool_cs_complete) <- NULL
+pool_cs_complete
+
+pool_cs_complete <- plyr::count(pool_cs_complete, 'group_code', wt_var = 'prop')
+sum(pool_cs_complete$freq)
+colnames(pool_cs_complete) <- c('group_code', 'prop')
+
+# checking that the rows match up
+all(pool_cs_complete$group_code == cogs_counts_sz$group_code)
+```
+
+### Testing the new sampling function
+```{r}
+nrow(pool_cs_complete)
+nrow(cogs_counts_sz)
+s3 <- Sys.time()
+out <- sampling_algorithm(cogs_counts_sz, pool_cs_complete, scale_factor = 0.5, thresh = 0.025, 1000, suppress_df= TRUE)
+
+s4 <- Sys.time()
+
+s4 - s3 
+
+out2 <- sampling_algorithm(cogs_counts_sz, pool_cs_complete, scale_factor = 0.5, thresh = 0.025, 1000, suppress_df= FALSE)
+out2
+
+```
+
+### Running the simulation
+```{r}
+n_sim <- 1000
+sf <- 0.5
+th <- 0.025
+
+steps_storage_hcs_sz <- rep(0, n_sim)
+start_time <- Sys.time()
+for (i in 1:n_sim) {
+  steps_storage_hcs_sz[i] <- sampling_algorithm(cogs_counts_sz, pool_cs_complete, scale_factor = sf, thresh = th, 1000, suppress_df= TRUE)
+}
+
+end_time <- Sys.time()
+end_time - start_time
+
+hcs_sz_steps <- data.frame(Resamples = steps_storage_hcs_sz/2,
+                       Diagnosis = rep('HCS to SZ', length(steps_storage_hcs_sz)))
+
+p1a <- hcs_sz_steps %>%
+  ggplot( aes(x = Resamples, fill = Diagnosis)) +
+    geom_histogram( color="#e9ecef", alpha=1, position = 'identity', binwidth=1) +
+    scale_fill_manual(values=c("#FA5D5D")) +
+    labs(fill='Diagnosis', y = 'Frequency') + 
+  #ylab('Number of Simulations') + xlab('Number of Resamples') + #ggtitle('Number of Full Resamples\nuntil SZ Convergence to HCS Proportions') + 
+  #scale_y_log10(breaks = c(1,10,50, 100, 200, 500, 750, 1000), oob = scales::squish_infinite) + 
+  scale_x_continuous(breaks = seq(0,25, 2.5)) +
+  theme(plot.title = element_text(hjust = 0.5,face='bold',size=14), axis.line = element_line(color = 'black'), 
+        #legend.key.size = unit(0.75, 'cm'),
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        legend.position = 'none')
+        #legend.title = element_text(size=13), #change legend title font size
+        #legend.text = element_text(size=12)) +
+  #xlim(0,42.5)
+
+p3a <- ggplotify::as.ggplot(print(p1a))
+
+quantile(steps_storage_hcs_sz/2, probs = 0.5, type = 4)
+
+grob2 <- grobTree(textGrob("Median = 14.5", x=0.80,  y=0.70, hjust=0,
+  gp=gpar(col="black", fontsize=13, fontface="italic")))
+
+library(grid)
+#p3a + annotation_custom(grob2)
+p3a
+
+
+mean(steps_storage_hcs_sz) / 2
+quantile(steps_storage_hcs_sz, probs=0.5,type = 4) / 2
+
+# rng <- range(steps_storage)
+# hist(steps_storage, main = 'SZSAFD to HCS: Number of Resamples\nuntil Convergence', xlab = "Number of Resamples")
+# hist(steps_storage, freq = TRUE, xlim = c(0, max(steps_storage)), breaks = 0:rng[2], xlab = 'Number of Resamples', main = 'SZSAFD to HCS: Resamples\nuntil Convergence')
+# title(sub = paste('Scale factor:', sf, '\tThreshold:', th), font.sub = 3, col.sub = 'darkgray')
+# grid()
+# 
+# steps_sz_cs <- plyr::count(steps_storage)
+# 
+# # Scatterplot representation
+# plot(steps_sz_cs$x, steps_sz_cs$freq/sum(steps_sz_cs$freq), main = 'SZ: Number of Resamples\nuntil Convergence', type = 'h', xlab = 'Number of Resamples', ylab = 'Density', lty = 1)
+# title(sub = paste('Scale factor:', sf, '\tThreshold:', th), font.sub = 3, col.sub = 'darkgray')
+# points(x = steps_sz_cs$x, y = steps_sz_cs$freq/sum(steps_sz_cs$freq), pch = 15)
+# minor.tick(nx = 2, ny = 2,   # Ticks density
+#            tick.ratio = 0.5)
+# grid()
+# 
+# 
+# library(kableExtra)
+# library(tableHTML)
+# 
+# perc_res_sz_cs <- quantile(steps_storage, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+# 
+# sum_stats_sz_cs <- data.frame(Percentile = names(perc_res_sz_cs),
+#                         Value = unname(perc_res_sz_cs))
+# sum_stats
+# 
+# tbl <- kbl(sum_stats_sz_cs, caption = "Number of Resamples until SZSAFD Convergence to Control Subjects", table.attr = "style='width:50%;'" ) %>%
+# kable_styling(bootstrap_options = "striped", full_width = T, position = "center")
+# tbl
+# 
+# mean(steps_storage)
+# sd(steps_storage)
+
+```
+
+
+# Generating the background information for COGS2
+
+## Counting HCS and SZ
+```{r}
+# counting the controls and the SZ
+plyr::count(df_COGS2, 'cDiagnosis4') # 1062 CS; 1415 SZSAFD
+```
+
+
+### HCS
+
+#### Trying Pie Charts
+```{r}
+library(lessR)
+
+df_cs_props <- group_code_gen(df_comparison_cs, group_codes_df)
+colnames(df_cs_props)
+
+df_cs_props <- df_cs_props[, c('group_code', 'COGS2\nProportion','ACS\n Proportion')]
+colnames(df_cs_props)[1:3] <- c('Group Code', 'COGS2', 'ACS')
+
+slices_cs <- round(df_cs_props$COGS2 * 100,2)
+lbls_cs <- df_cs_props$`Group Code`
+lbls_cs <- paste('Group ', lbls_cs, ': ', paste(slices_cs, '%', sep=''), sep = '')
+pie(slices_cs, labels=lbls_cs) # too hard to see
+```
+
+#### Trying Bar graphs (stacked)
+```{r}
+
+df_sz_props <- group_code_gen(df_comparison_sz, group_codes_df)
+colnames(df_sz_props)
+
+df_sz_props <- df_sz_props[, c('group_code', 'COGS2\nProportion','ACS\n Proportion')]
+colnames(df_sz_props)[1:3] <- c('Group Code', 'COGS2', 'ACS')
+
+df_comp_bar <- rbind(data.frame(Group = df_cs_props$`Group Code`,
+                              Proportion = df_cs_props$COGS2,
+                              Source = rep('HCS COGS2', nrow(df_cs_props))), 
+                     data.frame(Group = df_cs_props$`Group Code`,
+                              Proportion = df_cs_props$ACS,
+                              Source = rep('HCS ACS', nrow(df_cs_props))), 
+                     data.frame(Group = df_sz_props$`Group Code`,
+                              Proportion = df_sz_props$COGS2,
+                              Source = rep('SZ COGS2', nrow(df_sz_props))), 
+                     data.frame(Group = df_sz_props$`Group Code`,
+                              Proportion = df_sz_props$ACS,
+                              Source = rep('SZ ACS', nrow(df_sz_props))))
+
+View(df_comp_bar)
+
+group_codes_df
+
+acs_pool <- pool_gen2('All', df_COGS2, df_acs, group_codes_df)
+View(acs_pool)
+
+df_comp_bar2 <- rbind(df_comp_bar, data.frame(Group = acs_pool$group_code,
+                                              Proportion = acs_pool$prop,
+                                              Source = rep('ACS', nrow(acs_pool))))
+
+View(df_sz_props)
+
+df_comp_bar$Source <- factor(df_comp_bar$Source, levels = c('HCS COGS2', 'HCS ACS', 'SZ COGS2', 'SZ ACS'))
+df_comp_bar2$Source <- factor(df_comp_bar2$Source, levels = c('HCS COGS2', 'HCS ACS', 'SZ COGS2', 'SZ ACS', 'ACS'))
+                     
+# creating a color palette
+library(RColorBrewer)
+reds1 <- brewer.pal(9, 'YlOrRd')[6:9]
+greens1 <- brewer.pal(9, 'Greens')[6:9]
+yellows1 <- brewer.pal(9, 'YlOrRd')[2:5]
+blues1 <- brewer.pal(9, 'Blues')[6:9]
+reds2 <- brewer.pal(9, 'PuRd')[2:5]
+greens2 <- brewer.pal(9, 'Greens')[2:5]
+
+col_tot <- c(reds1, greens1, yellows1, blues1,  reds2, greens2)
+
+mycols <- col_tot[unique(sort(df_comp_bar$Group))]
+
+ggplot(df_comp_bar, aes(fill=factor(Group), y=Proportion, x=Source)) + 
+    geom_bar(position="stack", stat="identity") + 
+    #ggtitle('COGS2 and ACS Demographics') +
+    scale_fill_manual(values = mycols) +
+    guides(fill=guide_legend(title="Group", ncol = 1)) +
+  theme(axis.text=element_text(size=14, face = 'bold'),
+        axis.title=element_text(size=14,face="bold"),
+        legend.title = element_text(size=12), #change legend title font size
+        legend.text = element_text(size=12),
+        legend.text.align = 1,
+        legend.title.align = 1)
+
+# ACS pooled does not look appreciably different
+ggplot(df_comp_bar2, aes(fill=factor(Group), y=Proportion, x=Source)) + 
+    geom_bar(position="stack", stat="identity") + 
+    #ggtitle('COGS2 and ACS Demographics') +
+    scale_fill_manual(values = mycols) +
+    guides(fill=guide_legend(title="Group", ncol = 1)) +
+  theme(axis.text=element_text(size=14, face = 'bold'),
+        axis.title=element_text(size=14,face="bold"),
+        legend.title = element_text(size=12), #change legend title font size
+        legend.text = element_text(size=12),
+        legend.text.align = 1,
+        legend.title.align = 1)
+
+# making a new barplot with only one column for ACS
+df_comp_bar3 <- df_comp_bar2[df_comp_bar2$Source %in% (c('HCS COGS2', 'SZ COGS2', 'ACS')),]
+ggplot(df_comp_bar3, aes(fill=factor(Group), y=Proportion, x=Source)) + 
+    geom_bar(position="stack", stat="identity") + 
+    #ggtitle('COGS2 and ACS Demographics') +
+    scale_fill_manual(values = mycols) +
+    guides(fill=guide_legend(title="Group", ncol = 1)) +
+  theme(axis.text.x=element_text(size=14, face = 'bold', color = 'black'),
+        axis.text.y=element_text(size=13),
+        #axis.title.y=element_text(size=14,face="bold"),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        legend.title = element_text(size=12), #change legend title font size
+        legend.text = element_text(size=12),
+        legend.text.align = 1,
+        legend.title.align = 1,
+        legend.justification = 'top')
+
+# Making a table of city percentages
+cs_cts <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'CS',], 'cLocationCity')
+cs_cts$Proportion.HCS <- cs_cts$freq/sum(cs_cts$freq)
+cs_cts$Proportion.HCS <- paste(round(cs_cts$Proportion.HCS, 3) * 100,'%', sep = '')
+
+sz_cts <- plyr::count(df_COGS2[df_COGS2$cDiagnosis4 == 'SZSAFD',], 'cLocationCity')
+sz_cts$Proportion.SZ <- sz_cts$freq/sum(sz_cts$freq)
+sz_cts$Proportion.SZ <- paste(round(sz_cts$Proportion.SZ, 3) * 100,'%', sep = '')
+
+city_percs <- data.frame(City = cs_cts$cLocationCity, 
+                         Proportion.HCS = cs_cts$Proportion.HCS,
+                         Proportion.SZ = sz_cts$Proportion.SZ)
+city_percs
+
+# exporting the city percentages
+# write.csv(city_percs, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\city_percs.csv', row.names = FALSE)
+
+# exporting group codes table
+colnames(group_codes_df)
+group_codes_copy <- group_codes_df
+group_codes_copy <- group_codes_copy[, c('group_code','Race2', 'Hispan2', 'Gender')]
+colnames(group_codes_copy) <- c('Group','Race', 'Hispanic/Latino', 'Gender')
+
+group_codes_copy <- group_codes_copy[group_codes_copy$Group %in% df_comp_bar$Group,]
+View(group_codes_copy)
+
+# tbl2 <- kbl(group_codes_copy, align = 'c',table.attr = "style='width:50%;'" ) %>%
+# kable_styling(bootstrap_options = "basic", full_width = FALSE, position = "left", html_font = 'helvetica')
+# tbl2
+# 
+#  tbl2 %>% kable_paper() %>% save_kable(file = "C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\table1.html", self_contained = T)
+
+# making a new group_codes table
+# group_codes_copy$Race <- dict_transform(unique(group_codes_copy$Race2), c('African-American', 
+#                                                                           'American Indian/Alaska Native',
+#                                                                           'Asian',
+#                                                                           'Caucasian',
+#                                                                           'Native Hawaiian/Pacific Islander',
+#                                                                           'Other/Multiracial'),
+#                                         group_codes_copy$Race2)
+# 
+# group_codes_copy <- group_codes_copy[, c('Race', 'Hispan2', 'Gender')]
+# colnames(group_codes_copy)[2] <- 'Hispanic/Latino'
+View(group_codes_copy)
+
+# write.csv(group_codes_copy, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\group_codes.csv', row.names = FALSE)
+# 
+# png('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Rmd Files\\COGS2 Sim_abstract_093023\\group_codes.png', height = 50*nrow(group_codes_copy), width = 200*ncol(group_codes_copy))
+# grid.table(group_codes_copy)
+# dev.off()
+```
+
+
+

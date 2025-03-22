@@ -1,0 +1,268 @@
+---
+title: "26. Table 2 and Table 3 for 2010-2020"
+author: "Daniel Zoleikhaeian"
+date: "2023-04-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(plyr)
+library(ggplot2)
+us_data <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\bgc_merge_cDiag123_new.csv')
+head(us_data)
+us_data$cEnrollmentYear <- substr(us_data$cEnrollmentDateYear, 1,4)
+
+# Truncated Dataset: 2010-2020
+us_data_10_20 <- us_data[us_data$cEnrollmentYear %in% c(2010:2020), ]
+nrow(us_data_10_20)
+hist(as.numeric(us_data_10_20$cEnrollmentYear), breaks = 10)
+hist(as.numeric(us_data_10_20$cEnrollmentYear), breaks = 10, freq = F)
+```
+
+# Dependency
+```{r}
+race_cities_plot_data2 <- function (null_df, tot_df, disease, study, race_acr) {
+  
+  obs_df <- tot_df[tot_df$cStudy %in% study & tot_df$cDiagnosis4 %in% disease, ]
+  
+  obs_cities <- obs_df$cLocationCity[obs_df$cRace == race_acr]
+  
+  test_cities <- intersect(null_df$City, obs_cities)
+  
+  null_race_cts <- null_df[, 1:8]
+
+  null_race_cts <- df_avg[, 1:8]
+  null_race_props <- null_race_cts
+
+  for (i in 1:nrow(null_race_cts)) {
+    city_tot <- sum(null_race_cts[i, 2:8])
+    null_race_props[i, 2:8] <- null_race_cts[i,2:8] / city_tot
+  }
+  null_race_props <- null_race_props[null_race_props$City %in% test_cities,]
+  null_race_props <- null_race_props[order(null_race_props$City), ]
+  
+  brc <- obs_df %>%  
+    dplyr::group_by(cRace, cLocationCity) %>%  
+    dplyr::summarise(total_count=n(), .groups = 'drop')
+  
+  brc <- brc[brc$cLocationCity %in% test_cities, ]
+  
+  brc <- brc[order(brc$cLocationCity), ]
+  brc$Prop <- NA
+  
+  # Turning counts into proportions
+  for (i in 1:length(test_cities)) {
+    brc$Prop[brc$cLocationCity == test_cities[i]] <- brc$total_count[brc$cLocationCity == test_cities[i]] / sum(brc$total_count[brc$cLocationCity == test_cities[i]])
+  }
+  
+  null_row <- as.data.frame(null_race_props[,c('City', race_acr)])
+  obs_races <- brc[brc$cRace == race_acr, ]
+  obs_prop <- obs_races$Prop
+  
+  ## Begin output variables to send to lm() and plot()
+  propdif <- obs_prop - null_row[,2] ## response
+  names(propdif) <- test_cities
+  
+  city_cts <- plyr::count(obs_df$cLocationCity)
+  ct_to_plot <- city_cts$freq[city_cts$x %in% test_cities] ## predictor 1
+  
+  null_race_cts <- null_race_cts[null_race_cts$City %in% test_cities, ]
+  race_of_interest_null <- null_race_cts[, colnames(null_race_cts) == race_acr] ## predictor 2
+  
+  null_race_sums <- as.data.frame(apply(null_race_cts[,-1], 1, sum)) ## predictor 3
+  colnames(null_race_sums) <- 'Total City Population'
+  
+  output <- list(propdif, ct_to_plot, race_of_interest_null, null_race_sums[,1])
+  names(output) <- c('Prop dif', 'Total City Population', 'census average race count', 'census average pop total')
+  
+  return (output)
+  
+}
+
+df_check_2010 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2010.xlsx')
+df_check_2020 <- read_xlsx('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\reproj_30_2020.xlsx')
+
+dem_2010 <- df_check_2010[,-1]
+dem_2020 <- df_check_2020[,-1]
+
+df_avg <- df_check_2010
+df_avg[,] <- NA
+df_avg$City <- NULL
+
+for (i in 1:ncol(dem_2010)) {
+  df_avg[,i] <- rowMeans(cbind(dem_2010[,i], dem_2020[,i]))
+  
+}
+
+df_avg <- cbind(df_check_2010$City, df_avg)
+colnames(df_avg)[1] <- 'City'
+
+# Reformatting cities
+for (i in 1:length(df_avg$City)) {
+  df_avg$City[i] <- substr(df_avg$City[i], 1, unlist(gregexpr(',', df_avg$City[i]))[1] - 1)
+}
+
+# Standardizing race acronyms
+colnames(df_avg)[colnames(df_avg) == 'NA'] <- 'AE'
+colnames(df_avg)[colnames(df_avg) == 'NH'] <- 'Not Hispanic'
+colnames(df_avg)[colnames(df_avg) == 'PI'] <- 'NH'
+```
+
+# Pre-processing
+```{r}
+total_df_copy <- us_data_10_20
+total_df_copy$cRace[us_data_10_20$cRace == 'OT/UNK' | us_data_10_20$cRace == 'UNK'] <- 'OT'
+race_acrs <- c('AA', 'AS', 'AE', 'CA', 'NH', 'MR', 'OT')
+city_vec <- df_avg$City
+studies <- c('GPC', 'COGS2', 'BSNIP1', 'BSNIP2')
+```
+
+### Proportion Deltas Pipeline
+```{r}
+for (i in 1:length(cond_list)) {
+  for (j in 1:length(race_acrs)) {
+    deltas <- race_cities_plot_data2(df_avg, total_df_copy, disease = cond_list[[i]], study = c('GPC', 'COGS2'), race_acr = race_acrs[j])
+    prop_difs <- as.data.frame(deltas$`Prop dif`)
+    
+    not_in <- which(!(city_vec %in% rownames(prop_difs)))
+  city_vec[not_in]
+  
+    zero_vec <- rep(0, length(not_in))
+    names(zero_vec) <- city_vec[not_in]
+    
+    zero_vec_df <- (data.frame(zero_vec))
+    colnames(zero_vec_df) <- 'hold'
+    colnames(prop_difs) <- 'hold'
+    
+    prop_difs <- rbind(prop_difs, zero_vec_df)
+    
+    #View(prop_difs)
+    
+    prop_difs <- prop_difs[city_vec, ]
+    names(prop_difs) <- city_vec
+    prop_difs <- data.frame(prop_difs)
+    colnames(prop_difs) <- race_acrs[j]
+    
+    df_tot_props <- cbind(df_tot_props, prop_difs)
+  }
+}
+
+write.csv(df_tot_props, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 2 - Proportion Deltas\\prop_delts_cogsgpc1020_041723.csv', row.names = F)
+```
+
+
+# Table 3: Regression Results for COGS2 + GPC
+```{r}
+studies <- c('COGS2', 'GPC')
+out_list <- list()
+lm_results_df <- data.frame(matrix(NA, nrow = 12, ncol = 0))
+
+for (i in 1:length(cond_list)) {
+  for (j in 1:length(race_acrs)) {
+    
+    in_list <- race_cities_plot_data2(df_avg, total_df_copy, cond_list[[i]], studies, race_acrs[j])
+    
+    out_list[[length(out_list) + 1]] <- in_list
+    if (length(cond_list[[i]]) == 1) {
+      names(out_list)[length(out_list)] <- paste(cond_list[[i]], race_acrs[j])
+    } else {
+      names(out_list)[length(out_list)] <- paste('All', race_acrs[j])
+    }
+    
+    out_vec <- c()
+    for (k in 2:4) {
+      if (length(in_list[[1]]) < 1) {
+        #out_vec <- rep(NA, 21)
+        out_vec <- rep(NA, 12)
+        next
+      }
+      
+      lm_res <- lm(in_list[[1]] ~ log(unlist(in_list[[k]])) - 1)
+      summary_lm_res <- summary(lm_res)
+      int_coeff_std_pval <- summary_lm_res$coefficients[1, c(1, 2, 4)]
+
+      
+      # if (length(in_list[[1]]) == 1) {
+      #   pred_coeff_std_pval <- rep(NA, 3)
+      # } else {
+      #   pred_coeff_std_pval <- summary_lm_res$coefficients[2, c(1, 2, 4)]
+      # }
+      
+      #r_squared <- summary_lm_res$adj.r.squared
+      r_squared <- summary_lm_res$r.squared
+      #out_vec <- c(out_vec, int_coeff_std_pval, pred_coeff_std_pval, r_squared)
+      out_vec <- c(out_vec, int_coeff_std_pval, r_squared)
+    }
+    
+    lm_results_df <- cbind(lm_results_df, out_vec)
+  }
+}
+
+colnames(lm_results_df) <- rep(race_acrs, 5)
+
+View(lm_results_df)
+
+write.csv(lm_results_df, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 3 - Linear Regression Results\\cogsgpc1020_noint_rsq_0401723.csv', row.names = F)
+```
+
+# Table 3: Regression Results for COGS2 + GPC + BSNIP12
+```{r}
+studies <- c('COGS2', 'GPC', 'BSNIP1', 'BSNIP2')
+out_list <- list()
+#lm_results_df <- data.frame(matrix(NA, nrow=21, ncol=0))
+lm_results_df <- data.frame(matrix(NA, nrow = 12, ncol = 0))
+
+for (i in 1:length(cond_list)) {
+  for (j in 1:length(race_acrs)) {
+    
+    in_list <- race_cities_plot_data2(df_avg, total_df_copy, cond_list[[i]], studies, race_acrs[j])
+    
+    out_list[[length(out_list) + 1]] <- in_list
+    if (length(cond_list[[i]]) == 1) {
+      names(out_list)[length(out_list)] <- paste(cond_list[[i]], race_acrs[j])
+    } else {
+      names(out_list)[length(out_list)] <- paste('All', race_acrs[j])
+    }
+    
+    out_vec <- c()
+    for (k in 2:4) {
+      if (length(in_list[[1]]) < 1) {
+        #out_vec <- rep(NA, 21)
+        out_vec <- rep(NA, 12)
+        next
+      }
+      
+      lm_res <- lm(in_list[[1]] ~ log(in_list[[k]]) - 1)
+      summary_lm_res <- summary(lm_res)
+      int_coeff_std_pval <- summary_lm_res$coefficients[1, c(1, 2, 4)]
+
+      
+      # if (length(in_list[[1]]) == 1) {
+      #   pred_coeff_std_pval <- rep(NA, 3)
+      # } else {
+      #   pred_coeff_std_pval <- summary_lm_res$coefficients[2, c(1, 2, 4)]
+      # }
+      
+      #r_squared <- summary_lm_res$adj.r.squared
+      r_squared <- summary_lm_res$r.squared
+      #out_vec <- c(out_vec, int_coeff_std_pval, pred_coeff_std_pval, r_squared)
+      out_vec <- c(out_vec, int_coeff_std_pval, r_squared)
+    }
+    
+    lm_results_df <- cbind(lm_results_df, out_vec)
+  }
+}
+
+colnames(lm_results_df) <- rep(race_acrs, 5)
+
+View(lm_results_df)
+
+write.csv(lm_results_df, file = 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\3 Studies Dataset\\Dataset Merge\\Table 3 - Linear Regression Results\\all1020_noint_rsq_0401723.csv', row.names = F)
+
+```
+

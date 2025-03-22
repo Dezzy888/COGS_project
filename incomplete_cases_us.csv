@@ -1,0 +1,732 @@
+"X","cStudy","cAge","cDiagnosis","cEnrollmentDateYear","cGender","cRace","cHispanicorLatino","cLocationInstitution","cLocationCity","cLocationState","cLocationCounty","cDiagnosis2","cDiagnosis3","cDiagnosis4","cEnrollmentYear"
+1214,"BSNIP2",NA,"SAD","2019-10-15","UNK","UNK","Unknown","University of Texas Southwestern Medical Center","Dallas","TX","Dallas","SAFD","SZSAFD","SZSAFD",2019
+1238,"BSNIP2",NA,"BP","2020-01-28","F","CA","Yes","University of Texas Southwestern Medical Center","Dallas","TX","Dallas","BAD1_psy","BAD1","BAD12",2020
+1301,"BSNIP2",NA,"SZ","2020-06-23","UNK","UNK","Unknown","University of Texas Southwestern Medical Center","Dallas","TX","Dallas","SZ","SZSAFD","SZSAFD",2020
+1316,"BSNIP2",NA,"SZ","2020-07-02","UNK","UNK","Unknown","University of Texas Southwestern Medical Center","Dallas","TX","Dallas","SZ","SZSAFD","SZSAFD",2020
+1341,"BSNIP2",NA,"SZ","2020-08-03","M","CA","No","University of Texas Southwestern Medical Center","Dallas","TX","Dallas","SZ","SZSAFD","SZSAFD",2020
+1361,"BSNIP2",NA,"BP","2020-08-07","UNK","UNK","Unknown","University of Texas Southwestern Medical Center","Dallas","TX","Dallas","BAD1_psy","BAD1","BAD12",2020
+1370,"BSNIP2",NA,"NC","2020-09-04","UNK","UNK","Unknown","University of Texas Southwestern Medical Center","Dallas","TX","Dallas","CS","CS","CS",2020
+1534,"BSNIP2",NA,"UNK","2018-04-26","M","CA","No","Harvard Medical School","Boston","MA","Suffolk","","","",2018
+1535,"BSNIP2",NA,"UNK","2018-04-26","M","CA","No","Harvard Medical School","Boston","MA","Suffolk","","","",2018
+1629,"BSNIP2",NA,"UNK","2019-10-17","M","AA","No","Harvard Medical School","Boston","MA","Suffolk","","","",2019
+4820,"GPC",49,"Schizophrenia, Undifferentiated","","M","AA","No","GRU","Richmond","CA","Augusta-Richmond","SZ","SZSAFD","SZSAFD",NA
+4913,"GPC",NA,"Control","","F","OT/UNK","Unknown","GRU","Richmond","CA","Augusta-Richmond","CS","CS","CS",NA
+5552,"GPC",35,"Schizophrenia, Hebephrenic","","F","AA","No","GRU","Richmond","CA","Augusta-Richmond","SZ","SZSAFD","SZSAFD",NA
+5636,"GPC",49,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+5821,"GPC",75,"Control","","F","AA","No","GRU","Richmond","CA","Augusta-Richmond","CS","CS","CS",NA
+6099,"GPC",23,"Control","","F","CA","No","UNC","Chapel Hill","NC","Orange","CS","CS","CS",NA
+6264,"GPC",64,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+6286,"GPC",28,"Control","","F","CA","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+6500,"GPC",25,"Control","","M","OT/UNK","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+6577,"GPC",NA,"Control","2009-05-08","M","OT/UNK","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",2009
+6731,"GPC",31,"Control","","F","AE","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+6969,"GPC",47,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+7070,"GPC",32,"Control","","M","OT/UNK","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+7394,"GPC",21,"Control","","F","AS","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+7513,"GPC",50,"Control","","F","CA","No","UNC","Chapel Hill","NC","Orange","CS","CS","CS",NA
+7535,"GPC",67,"Control","","M","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+7561,"GPC",43,"Control","","M","MR","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+7754,"GPC",47,"Control","","F","CA","No","UNC","Chapel Hill","NC","Orange","CS","CS","CS",NA
+7819,"GPC",34,"Control","","F","MR","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+7888,"GPC",40,"Control","","F","NH","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+8104,"GPC",46,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+8109,"GPC",28,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+8495,"GPC",36,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+8516,"GPC",43,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+8844,"GPC",63,"Control","","M","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+9253,"GPC",32,"Control","","M","OT/UNK","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+9729,"GPC",27,"Control","","M","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+9966,"GPC",26,"Control","","M","CA","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+10621,"GPC",72,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+11092,"GPC",54,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+11548,"GPC",NA,"Control","2010-03-09","M","AA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",2010
+11580,"GPC",63,"Control","","M","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+11664,"GPC",60,"Control","","F","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+11833,"GPC",58,"Control","","F","MR","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+11914,"GPC",25,"Control","","F","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+11994,"GPC",29,"Schizophrenia, Undifferentiated","","M","CA","Yes","UCSF","San Francisco","CA","San Francisco","SZ","SZSAFD","SZSAFD",NA
+12136,"GPC",82,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+12199,"GPC",51,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+12297,"GPC",27,"Schizophrenia, Hebephrenic","","M","AA","No","GRU","Richmond","CA","Augusta-Richmond","SZ","SZSAFD","SZSAFD",NA
+12540,"GPC",25,"Schizophrenia, Undifferentiated","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+12733,"GPC",55,"Control","","M","AA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+12774,"GPC",52,"Control","","F","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+12781,"GPC",50,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+12822,"GPC",36,"Schizophrenia, Undifferentiated","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+12824,"GPC",45,"Schizophrenia, Undifferentiated","","F","AS","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+12831,"GPC",65,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+12949,"GPC",45,"Schizophrenia, Undifferentiated","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+12951,"GPC",24,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+13093,"GPC",56,"Schizophrenia, Hebephrenic","","M","AE","Yes","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+13095,"GPC",28,"Schizophrenia, Undifferentiated","","M","CA","Yes","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+13099,"GPC",45,"Schizophrenia, Hebephrenic","","M","AA","No","GRU","Richmond","CA","Augusta-Richmond","SZ","SZSAFD","SZSAFD",NA
+13102,"GPC",63,"Schizophrenia, Undifferentiated","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+13107,"GPC",24,"Schizophrenia, Undifferentiated","","M","MR","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+13528,"GPC",55,"Schizophrenia, Undifferentiated","","M","AS","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+13541,"GPC",37,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+13630,"GPC",60,"Schizophrenia, Undifferentiated","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+13771,"GPC",56,"Schizoaffective disorder, depressive type","","M","CA","Yes","UCLA","Los Angeles","CA","Los Angeles","SAFD","SZSAFD","SZSAFD",NA
+13888,"GPC",23,"Control","","F","OT/UNK","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+13893,"GPC",42,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+14072,"GPC",34,"Schizophrenia, Undifferentiated","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+14291,"GPC",24,"Control","","M","AS","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+15042,"GPC",57,"Schizophrenia, Hebephrenic","","M","CA","Yes","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+15165,"GPC",51,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+15172,"GPC",57,"Schizophrenia, Hebephrenic","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+15181,"GPC",58,"Schizophrenia, Undifferentiated","","F","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+15257,"GPC",72,"Control","","M","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+15354,"GPC",20,"Control","","F","AS","No","UNC","Chapel Hill","NC","Orange","CS","CS","CS",NA
+17048,"GPC",49,"Control","","M","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+17700,"GPC",37,"Schizophrenia, Undifferentiated","","F","MR","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18160,"GPC",55,"Schizophrenia, Undifferentiated","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18162,"GPC",59,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18163,"GPC",31,"Schizophrenia, Hebephrenic","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18165,"GPC",52,"Schizophrenia, Paranoid","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18173,"GPC",57,"Schizophrenia, Paranoid","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18178,"GPC",34,"Schizophrenia, Undifferentiated","","F","CA","Yes","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18179,"GPC",48,"Schizophrenia, Hebephrenic","","M","MR","Yes","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18189,"GPC",53,"Schizophrenia, Paranoid","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18190,"GPC",53,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18260,"GPC",43,"Schizophrenia, Undifferentiated","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18262,"GPC",60,"Schizophrenia, Hebephrenic","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18263,"GPC",44,"Schizophrenia, Undifferentiated","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+18283,"GPC",57,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18321,"GPC",NA,"Control","","M","OT/UNK","Unknown","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18397,"GPC",61,"Control","","M","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18399,"GPC",71,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18400,"GPC",25,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18401,"GPC",59,"Control","","M","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18562,"GPC",35,"Schizoaffective disorder, depressive type","","M","AS","No","UCLA","Los Angeles","CA","Los Angeles","SAFD","SZSAFD","SZSAFD",NA
+18566,"GPC",37,"Control","","F","AS","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18567,"GPC",28,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18784,"GPC",80,"Control","","M","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18793,"GPC",43,"Control","","M","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18814,"GPC",26,"Control","","M","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+18883,"GPC",18,"Unaffected","","F","OT/UNK","Unknown","UNC","Chapel Hill","NC","Orange","CS","CS","CS",NA
+18975,"GPC",20,"Control","","F","MR","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+19142,"GPC",70,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+19150,"GPC",40,"Control","","M","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+19204,"GPC",NA,"Control","2012-02-03","F","AA","No","NYU","New York","NY","New York","CS","CS","CS",2012
+19256,"GPC",57,"Schizophrenia, Undifferentiated","","F","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+19963,"GPC",NA,"Control","2011-10-08","M","OT/UNK","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",2011
+20072,"GPC",32,"Control","","F","AS","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+20183,"GPC",54,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+20187,"GPC",59,"Schizophrenia, Undifferentiated","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+20758,"GPC",73,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+20764,"GPC",58,"Schizophrenia, Hebephrenic","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+20765,"GPC",64,"Schizophrenia, Undifferentiated","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+22243,"GPC",54,"Schizophrenia, Undifferentiated","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+22245,"GPC",59,"Schizophrenia, Paranoid","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+22254,"GPC",47,"Schizophrenia, Paranoid","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+22297,"GPC",41,"Control","","M","MR","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+22516,"GPC",52,"Control","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+22752,"GPC",52,"Schizophrenia, Paranoid","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+23456,"GPC",28,"Does not qualify","","F","AA","No","Emory","Atlanta","GA","Fulton","","","",NA
+23468,"GPC",44,"Control","","F","CA","No","UNC","Chapel Hill","NC","Orange","CS","CS","CS",NA
+23742,"GPC",NA,"Does not qualify","","F","CA","Unknown","Emory","Atlanta","GA","Fulton","","","",NA
+23863,"GPC",34,"Control","","M","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+24868,"GPC",21,"Control","","F","CA","No","UNC","Chapel Hill","NC","Orange","CS","CS","CS",NA
+24911,"GPC",55,"Control","","M","AA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+24936,"GPC",45,"Control","","M","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+24939,"GPC",60,"Control","","F","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+24959,"GPC",28,"Control","","M","CA","Unknown","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+24965,"GPC",27,"Control","","F","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+24967,"GPC",21,"Control","","F","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+24974,"GPC",82,"Control","","F","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+25090,"GPC",45,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+25119,"GPC",39,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+25153,"GPC",21,"Control","","F","CA","No","UNC","Chapel Hill","NC","Orange","CS","CS","CS",NA
+25247,"GPC",30,"Control","","F","AS","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+25292,"GPC",18,"Control","","F","CA","No","SUNY: Upstate","Syracuse","NY","Onondaga","CS","CS","CS",NA
+26016,"GPC",35,"Does not qualify","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+26050,"GPC",53,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+26080,"GPC",35,"Unaffected","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26082,"GPC",44,"Unaffected","","F","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26098,"GPC",60,"Unaffected","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26099,"GPC",57,"Unaffected","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26100,"GPC",40,"Unaffected","","M","AA","Yes","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26102,"GPC",36,"Unaffected","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26103,"GPC",44,"Unaffected","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26104,"GPC",46,"Psychosis NOS","","M","MR","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+26109,"GPC",55,"Unaffected","","F","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26110,"GPC",44,"Unaffected","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26132,"GPC",45,"Unaffected","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26133,"GPC",35,"Major depressive disorder, moderate","","M","CA","Unknown","SUNY: Stonybrook","Stonybrook","NY","Suffolk","MDD","MDD","MDD",NA
+26136,"GPC",62,"Schizophrenia, Undifferentiated","","M","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+26138,"GPC",54,"Schizophrenia, Undifferentiated","","F","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+26139,"GPC",58,"Does not qualify","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+26142,"GPC",38,"Does not qualify","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+26147,"GPC",51,"Major depressive disorder","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","MDD","MDD","MDD",NA
+26151,"GPC",66,"Unaffected","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26153,"GPC",38,"Unaffected","","M","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26155,"GPC",56,"Unaffected","","F","OT/UNK","Yes","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26157,"GPC",38,"Schizophrenia, Hebephrenic","","M","CA","Unknown","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+26159,"GPC",56,"Bipolar I with psychosis","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","BAD1_psy","BAD1","BAD12",NA
+26160,"GPC",42,"Schizophrenia, Undifferentiated","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+26161,"GPC",48,"Does not qualify","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+26162,"GPC",46,"Does not qualify","","F","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+26164,"GPC",55,"Schizophrenia, Undifferentiated","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+26168,"GPC",46,"Major depressive disorder","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","MDD","MDD","MDD",NA
+26178,"GPC",46,"Does not qualify","","M","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+26182,"GPC",48,"Unaffected","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26184,"GPC",26,"Unaffected","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+26349,"GPC",62,"Schizophrenia, Paranoid","","M","AA","No","USC","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+26670,"GPC",55,"Control","","F","AA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+27058,"GPC",48,"Schizoaffective disorder, depressive type","","F","AA","No","Wright State","Dayton","OH","Montgomery","SAFD","SZSAFD","SZSAFD",NA
+27065,"GPC",51,"Schizoaffective disorder, depressive type","","F","AA","No","Wright State","Dayton","OH","Montgomery","SAFD","SZSAFD","SZSAFD",NA
+27117,"GPC",NA,"Control: does not qualify","2011-06-03","M","AA","No","NYU","New York","NY","New York","CS","CS","CS",2011
+27447,"GPC",53,"Bipolar I with psychosis","","F","AA","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+28615,"GPC",44,"Control","","F","AA","No","Wright State","Dayton","OH","Montgomery","CS","CS","CS",NA
+28762,"GPC",45,"Does not qualify","","F","AA","No","Wright State","Dayton","OH","Montgomery","","","",NA
+29177,"GPC",18,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+29302,"GPC",32,"Schizophrenia, Undifferentiated","","M","AA","Yes","Emory","Atlanta","GA","Fulton","SZ","SZSAFD","SZSAFD",NA
+29371,"GPC",38,"Does not qualify","","F","AA","No","Emory","Atlanta","GA","Fulton","","","",NA
+29376,"GPC",37,"Bipolar I with psychosis","","M","MR","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+29664,"GPC",52,"Control","","M","OT/UNK","Yes","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+29897,"GPC",29,"Control","","F","AA","No","NYU","New York","NY","New York","CS","CS","CS",NA
+29946,"GPC",53,"Schizophrenia, Paranoid","","F","AA","No","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+29947,"GPC",32,"Schizophrenia, Paranoid","","F","AA","No","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+29948,"GPC",23,"Control","","F","AA","No","NYU","New York","NY","New York","CS","CS","CS",NA
+29949,"GPC",27,"Control","","F","AA","No","NYU","New York","NY","New York","CS","CS","CS",NA
+29950,"GPC",28,"Schizophrenia, Undifferentiated","","M","AA","No","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+29951,"GPC",29,"Schizophrenia, Undifferentiated","","M","AA","No","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+29952,"GPC",39,"Schizophrenia, Hebephrenic","","M","AA","No","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+29994,"GPC",64,"Control","","M","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+29999,"GPC",47,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+30002,"GPC",19,"Schizophrenia, Undifferentiated","","M","AA","No","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30022,"GPC",44,"Control","","M","AA","No","NYU","New York","NY","New York","CS","CS","CS",NA
+30101,"GPC",66,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+30152,"GPC",62,"Schizophrenia, Undifferentiated","","M","AA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30179,"GPC",63,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+30212,"GPC",64,"Bipolar I with psychosis","","M","AA","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+30299,"GPC",51,"Schizophrenia, Paranoid","","M","AA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30300,"GPC",47,"Schizophrenia, Paranoid","","M","AA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30301,"GPC",47,"Schizophrenia, Undifferentiated","","M","CA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30302,"GPC",36,"Schizophrenia, Undifferentiated","","F","AA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30338,"GPC",32,"Schizophrenia, Undifferentiated","","M","AA","No","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30350,"GPC",23,"Control","","M","OT/UNK","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+30351,"GPC",24,"Control: depression","","F","OT/UNK","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+30375,"GPC",28,"Control","","F","CA","Yes","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+30376,"GPC",34,"Control","","M","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+30396,"GPC",52,"Schizophrenia, Hebephrenic","","M","OT/UNK","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30397,"GPC",38,"Schizophrenia, Undifferentiated","","M","CA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30398,"GPC",41,"Schizophrenia, Paranoid","","M","CA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30400,"GPC",23,"Control","","F","AA","No","NYU","New York","NY","New York","CS","CS","CS",NA
+30423,"GPC",57,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+30490,"GPC",59,"Bipolar I with psychosis","","M","MR","No","SUNY: Downstate","New York","NY","Kings","BAD1_psy","BAD1","BAD12",NA
+30540,"GPC",32,"Control","","F","CA","No","USC","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+30642,"GPC",60,"Control","","F","AA","No","GRU","Richmond","CA","Augusta-Richmond","CS","CS","CS",NA
+30736,"GPC",37,"Schizophrenia, Undifferentiated","","F","AA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30773,"GPC",58,"Control","","M","OT/UNK","Yes","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+30834,"GPC",42,"Schizophrenia, Undifferentiated","","M","AA","Yes","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+30862,"GPC",50,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+30995,"GPC",55,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+30997,"GPC",57,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+31009,"GPC",20,"Manic episode with psychosis (Bipolar I)","","F","AA","No","GRU","Richmond","CA","Augusta-Richmond","BAD1_psy","BAD1","BAD12",NA
+31011,"GPC",42,"Control","","F","CA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31093,"GPC",24,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31105,"GPC",63,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+31113,"GPC",63,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31167,"GPC",18,"Bipolar I with psychosis","","F","AA","No","SUNY: Downstate","New York","NY","Kings","BAD1_psy","BAD1","BAD12",NA
+31172,"GPC",59,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31193,"GPC",46,"Control","","M","OT/UNK","Yes","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31199,"GPC",44,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+31204,"GPC",48,"Control","","M","AA","No","NYU","New York","NY","New York","CS","CS","CS",NA
+31209,"GPC",58,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31566,"GPC",55,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31589,"GPC",34,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31593,"GPC",54,"Control","","M","AS","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31596,"GPC",61,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31679,"GPC",70,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+31780,"GPC",20,"Control","","F","MR","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+31855,"GPC",72,"Schizophrenia, Paranoid","","M","AA","No","NYU","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+32096,"GPC",32,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+32097,"GPC",54,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+32137,"GPC",37,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+32190,"GPC",48,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+32191,"GPC",48,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+32253,"GPC",26,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+32458,"GPC",72,"Control","","F","NH","Yes","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+32705,"GPC",53,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+32896,"GPC",23,"Bipolar I with psychosis","","M","MR","Yes","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+32922,"GPC",62,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+32934,"GPC",56,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+32967,"GPC",30,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33015,"GPC",28,"Does not qualify","","M","AA","No","Wright State","Dayton","OH","Montgomery","","","",NA
+33119,"GPC",53,"Bipolar I with psychosis","","F","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","BAD1_psy","BAD1","BAD12",NA
+33120,"GPC",67,"Bipolar I with psychosis","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","BAD1_psy","BAD1","BAD12",NA
+33121,"GPC",45,"Psychosis NOS","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+33122,"GPC",46,"Schizophrenia","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+33123,"GPC",50,"Psychosis NOS","","F","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+33125,"GPC",56,"Schizophrenia","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+33126,"GPC",50,"Bipolar I with psychosis","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","BAD1_psy","BAD1","BAD12",NA
+33128,"GPC",67,"Schizophrenia","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+33130,"GPC",71,"Schizophrenia","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+33131,"GPC",52,"Schizophrenia","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+33133,"GPC",66,"Schizophrenia","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+33134,"GPC",61,"Control","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33135,"GPC",40,"Psychosis NOS","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","","","",NA
+33136,"GPC",55,"Control","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33137,"GPC",55,"Control","","M","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33138,"GPC",69,"Control","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33139,"GPC",53,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33140,"GPC",43,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33141,"GPC",60,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33142,"GPC",58,"Control","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33143,"GPC",66,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33144,"GPC",48,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33145,"GPC",52,"Control","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33146,"GPC",44,"Control","","M","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33147,"GPC",64,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33148,"GPC",58,"Schizophrenia","","F","AA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","SZ","SZSAFD","SZSAFD",NA
+33149,"GPC",43,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33150,"GPC",43,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33151,"GPC",50,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33152,"GPC",60,"Control","","F","CA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33153,"GPC",53,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33154,"GPC",71,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33155,"GPC",64,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33156,"GPC",61,"Control","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33157,"GPC",55,"Control","","M","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33401,"GPC",53,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33449,"GPC",30,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33534,"GPC",65,"Control","","F","CA","No","SUNY: Stonybrook","Stonybrook","NY","Suffolk","CS","CS","CS",NA
+33548,"GPC",61,"Bipolar I with psychosis","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+33668,"GPC",33,"Schizophrenia, Paranoid","","M","AA","No","Emory","Atlanta","GA","Fulton","SZ","SZSAFD","SZSAFD",NA
+33669,"GPC",49,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+33670,"GPC",69,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+33671,"GPC",44,"Control","","M","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+33672,"GPC",65,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+33673,"GPC",61,"Control","","M","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+33674,"GPC",58,"Bipolar I with psychosis","","M","AA","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+33675,"GPC",35,"Schizoaffective disorder, bipolar type","","F","MR","No","Emory","Atlanta","GA","Fulton","SAFD","SZSAFD","SZSAFD",NA
+33691,"GPC",50,"Schizoaffective disorder, bipolar type","","M","AA","No","Emory","Atlanta","GA","Fulton","SAFD","SZSAFD","SZSAFD",NA
+33692,"GPC",55,"Bipolar I with psychosis","","F","AA","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+33693,"GPC",45,"Bipolar I with psychosis","","M","AA","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+33694,"GPC",56,"Bipolar I with psychosis","","M","AA","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+33695,"GPC",59,"Bipolar I with psychosis","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+33696,"GPC",44,"Bipolar I with psychosis","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+33709,"GPC",56,"Control","","M","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+33710,"GPC",66,"Bipolar I with psychosis","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+33808,"GPC",60,"Schizoaffective disorder, depressive type","","F","AA","No","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+33809,"GPC",68,"Control","","M","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+33839,"GPC",65,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33866,"GPC",22,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33868,"GPC",53,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33871,"GPC",30,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33872,"GPC",67,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33873,"GPC",52,"Control","","F","CA","Yes","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33874,"GPC",61,"Control","","F","CA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33875,"GPC",39,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33876,"GPC",59,"Control: does not qualify","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33878,"GPC",58,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33879,"GPC",37,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33880,"GPC",21,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33883,"GPC",22,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33896,"GPC",27,"Control","","F","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33898,"GPC",25,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33899,"GPC",24,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33900,"GPC",27,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33903,"GPC",34,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33910,"GPC",57,"Control","","F","AA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33919,"GPC",32,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33920,"GPC",30,"Control","","F","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33921,"GPC",56,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33924,"GPC",39,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33936,"GPC",58,"Control","","M","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33939,"GPC",52,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33940,"GPC",51,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33958,"GPC",39,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33960,"GPC",29,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33980,"GPC",56,"Control","","F","AA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+33984,"GPC",45,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+33997,"GPC",33,"Bipolar I disorder","","M","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+33999,"GPC",63,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34001,"GPC",55,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34006,"GPC",63,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34007,"GPC",57,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34009,"GPC",39,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34018,"GPC",52,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34019,"GPC",51,"Control","","F","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34021,"GPC",55,"Control","","M","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34032,"GPC",39,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34036,"GPC",20,"Control","","M","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34038,"GPC",31,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34039,"GPC",45,"Control","","M","AA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34040,"GPC",38,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34041,"GPC",22,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34043,"GPC",30,"Control","","M","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34049,"GPC",31,"Control","","M","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+34050,"GPC",59,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34051,"GPC",48,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34063,"GPC",29,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34064,"GPC",40,"Control","","M","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34066,"GPC",49,"Control","","M","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34067,"GPC",26,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34069,"GPC",23,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34076,"GPC",38,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34077,"GPC",51,"Control","","M","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34084,"GPC",34,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+34086,"GPC",61,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34087,"GPC",42,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34088,"GPC",64,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34089,"GPC",56,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34090,"GPC",49,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34103,"GPC",25,"Control","","M","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34104,"GPC",29,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34107,"GPC",50,"Bipolar I with psychosis","","M","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34108,"GPC",29,"Control","","F","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34109,"GPC",60,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34111,"GPC",28,"Control","","F","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34112,"GPC",52,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34124,"GPC",57,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34127,"GPC",50,"Control","","M","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34128,"GPC",41,"Control","","F","CA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+34161,"GPC",21,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34163,"GPC",57,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34170,"GPC",33,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34179,"GPC",72,"Control","","F","MR","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+34198,"GPC",28,"Control","","M","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34200,"GPC",60,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34208,"GPC",58,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34217,"GPC",50,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34218,"GPC",58,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34222,"GPC",26,"Control: depression","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34224,"GPC",52,"Bipolar I with psychosis","","M","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34225,"GPC",54,"Schizophrenia, Undifferentiated","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+34239,"GPC",61,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34240,"GPC",27,"Control","","M","OT/UNK","Unknown","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34251,"GPC",52,"Control","","F","AA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+34255,"GPC",43,"Control: depression","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34266,"GPC",55,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34271,"GPC",41,"Control","","F","CA","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+34280,"GPC",56,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34281,"GPC",63,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34282,"GPC",61,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34283,"GPC",55,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34284,"GPC",20,"Control","","M","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34285,"GPC",57,"Control","","F","MR","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34286,"GPC",66,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34288,"GPC",50,"Control","","F","MR","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34296,"GPC",61,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34307,"GPC",48,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34309,"GPC",28,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34310,"GPC",34,"Control: depression","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34317,"GPC",24,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34330,"GPC",68,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34331,"GPC",50,"Control: depression","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34332,"GPC",53,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34350,"GPC",23,"Control","","M","CA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34351,"GPC",21,"Control","","M","AA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34352,"GPC",31,"Control","","M","AA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34353,"GPC",22,"Control","","F","AA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34409,"GPC",50,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34414,"GPC",45,"Control","","F","AA","No","Emory","Atlanta","GA","Fulton","CS","CS","CS",NA
+34417,"GPC",57,"Schizophrenia, Paranoid","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+34428,"GPC",46,"Schizophrenia, Paranoid","","F","MR","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+34429,"GPC",44,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34430,"GPC",71,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34434,"GPC",47,"Schizoaffective disorder, depressive type","","F","AA","No","Emory","Atlanta","GA","Fulton","SAFD","SZSAFD","SZSAFD",NA
+34436,"GPC",55,"Schizoaffective disorder, depressive type","","F","AA","No","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+34437,"GPC",74,"Schizophrenia, Undifferentiated","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+34438,"GPC",44,"Schizoaffective disorder, depressive type","","F","AA","No","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+34439,"GPC",60,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34440,"GPC",49,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34441,"GPC",64,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34442,"GPC",65,"Control","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34443,"GPC",29,"Control","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+34444,"GPC",40,"Bipolar I with psychosis","","F","AA","Yes","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34449,"GPC",23,"Schizophrenia, Undifferentiated","","F","AA","No","Emory","Atlanta","GA","Fulton","SZ","SZSAFD","SZSAFD",NA
+34455,"GPC",23,"Bipolar I with psychosis","","F","AA","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+34496,"GPC",47,"Bipolar I with psychosis","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34497,"GPC",38,"Bipolar I with psychosis","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34498,"GPC",51,"Bipolar I with psychosis","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34499,"GPC",51,"Schizoaffective disorder, bipolar type","","F","MR","Yes","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+34501,"GPC",35,"Bipolar I with psychosis","","M","AA","No","SUNY: Downstate","New York","NY","Kings","BAD1_psy","BAD1","BAD12",NA
+34511,"GPC",58,"Bipolar I disorder","","F","AA","No","Emory","Atlanta","GA","Fulton","BAD1_psy","BAD1","BAD12",NA
+34533,"GPC",55,"Control","","F","MR","No","SUNY: Downstate","New York","NY","Kings","CS","CS","CS",NA
+34572,"GPC",61,"Bipolar I with psychosis","","M","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34573,"GPC",57,"Bipolar I disorder","","F","AA","Yes","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34577,"GPC",39,"Schizophrenia, Paranoid","","M","AA","No","SUNY: Downstate","New York","NY","Kings","SZ","SZSAFD","SZSAFD",NA
+34582,"GPC",46,"Bipolar I disorder","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34583,"GPC",34,"Bipolar I disorder","","F","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34587,"GPC",61,"Schizoaffective disorder, bipolar type","","F","AA","No","SUNY: Downstate","New York","NY","Kings","SAFD","SZSAFD","SZSAFD",NA
+34590,"GPC",56,"Schizophrenia, Undifferentiated","","F","AA","No","SUNY: Downstate","New York","NY","Kings","SZ","SZSAFD","SZSAFD",NA
+34595,"GPC",66,"Schizoaffective disorder, bipolar type","","F","CA","No","SUNY: Downstate","New York","NY","Kings","SAFD","SZSAFD","SZSAFD",NA
+34596,"GPC",71,"Schizoaffective disorder, bipolar type","","F","CA","No","SUNY: Downstate","New York","NY","Kings","SAFD","SZSAFD","SZSAFD",NA
+34597,"GPC",66,"Schizophrenia, Undifferentiated","","F","CA","No","SUNY: Downstate","New York","NY","Kings","SZ","SZSAFD","SZSAFD",NA
+34608,"GPC",25,"Schizoaffective disorder, depressive type","","F","AA","Yes","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+34609,"GPC",31,"Schizophrenia, Undifferentiated","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+34610,"GPC",27,"Bipolar I with psychosis","","M","AA","No","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34611,"GPC",20,"Schizoaffective disorder, bipolar type","","F","AA","No","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+34615,"GPC",63,"Schizoaffective disorder, depressive type","","M","AA","No","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+34616,"GPC",27,"Schizophrenia, Undifferentiated","","M","MR","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+34617,"GPC",59,"Bipolar I disorder","","M","AA","Yes","Mt. Sinai","New York","NY","New York","BAD1_psy","BAD1","BAD12",NA
+34766,"COGS2",56,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+34859,"COGS2",41,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+34892,"COGS2",60,"SZ","","F","CA","Yes","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+34933,"COGS2",59,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+34962,"COGS2",63,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+34971,"COGS2",41,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+34980,"COGS2",54,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+34994,"COGS2",54,"SZ","","M","AA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35011,"COGS2",50,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35020,"COGS2",63,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35027,"COGS2",63,"SAFD","","F","CA","No","UCSD","San Diego","CA","San Diego","SAFD","SZSAFD","SZSAFD",NA
+35037,"COGS2",25,"CTRL","","F","AA","No","UCSD","San Diego","CA","San Diego","CS","CS","CS",NA
+35059,"COGS2",46,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35060,"COGS2",52,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35075,"COGS2",42,"SZ","","F","MR","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35076,"COGS2",34,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35085,"COGS2",29,"CTRL","","F","AS","No","UCSD","San Diego","CA","San Diego","CS","CS","CS",NA
+35092,"COGS2",55,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35093,"COGS2",54,"SZ","","F","AA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35099,"COGS2",53,"SZ","","M","CA","Yes","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35110,"COGS2",33,"SZ","","M","MR","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35111,"COGS2",25,"CTRL","","F","AS","No","UCSD","San Diego","CA","San Diego","CS","CS","CS",NA
+35119,"COGS2",33,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35121,"COGS2",43,"CTRL","","F","MR","Yes","UCSD","San Diego","CA","San Diego","CS","CS","CS",NA
+35127,"COGS2",42,"CTRL","","M","MR","Yes","UCSD","San Diego","CA","San Diego","CS","CS","CS",NA
+35128,"COGS2",50,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35134,"COGS2",57,"SZ","","M","AA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35136,"COGS2",44,"CTRL","","F","MR","Yes","UCSD","San Diego","CA","San Diego","CS","CS","CS",NA
+35146,"COGS2",56,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35148,"COGS2",36,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35153,"COGS2",47,"SZ","","F","MR","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35169,"COGS2",51,"SZ","","F","MR","Yes","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35173,"COGS2",54,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35181,"COGS2",49,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35188,"COGS2",52,"SZ","","F","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35189,"COGS2",30,"CTRL","","F","CA","No","UCSD","San Diego","CA","San Diego","CS","CS","CS",NA
+35198,"COGS2",58,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35208,"COGS2",52,"SZ","","F","AA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35216,"COGS2",31,"SZ","","M","CA","No","UCSD","San Diego","CA","San Diego","SZ","SZSAFD","SZSAFD",NA
+35253,"COGS2",38,"SZ","","F","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35270,"COGS2",38,"SZ","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35285,"COGS2",50,"SZ","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35290,"COGS2",50,"SZ","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35446,"COGS2",54,"SZ","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35477,"COGS2",44,"SZ","","M","AA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35534,"COGS2",43,"SZ","","M","CA","Yes","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35561,"COGS2",41,"CTRL","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+35620,"COGS2",52,"SZ","","M","CA","Yes","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35649,"COGS2",43,"CTRL","","M","CA","Yes","UCLA","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+35663,"COGS2",51,"CTRL","","F","AA","No","UCLA","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+35672,"COGS2",36,"SZ","","M","CA","No","UCLA","Los Angeles","CA","Los Angeles","SZ","SZSAFD","SZSAFD",NA
+35706,"COGS2",53,"CTRL","","M","AS","No","UCLA","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+35707,"COGS2",59,"CTRL","","F","CA","No","UCLA","Los Angeles","CA","Los Angeles","CS","CS","CS",NA
+35708,"COGS2",36,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35716,"COGS2",37,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35719,"COGS2",29,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35721,"COGS2",23,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35724,"COGS2",47,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35725,"COGS2",47,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35726,"COGS2",30,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35736,"COGS2",58,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35737,"COGS2",61,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35739,"COGS2",56,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35740,"COGS2",47,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35742,"COGS2",51,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35744,"COGS2",50,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35746,"COGS2",53,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35748,"COGS2",53,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35749,"COGS2",64,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35751,"COGS2",45,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35752,"COGS2",48,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35753,"COGS2",45,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35754,"COGS2",60,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35755,"COGS2",49,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35757,"COGS2",19,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35758,"COGS2",28,"SZ","","M","MR","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35760,"COGS2",41,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35761,"COGS2",54,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35763,"COGS2",42,"SZ","","M","AE","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35767,"COGS2",61,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35768,"COGS2",54,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35770,"COGS2",28,"CTRL","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35771,"COGS2",60,"SZ","","M","UNK","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35773,"COGS2",45,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35775,"COGS2",60,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35776,"COGS2",63,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35777,"COGS2",64,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35779,"COGS2",35,"CTRL","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35780,"COGS2",49,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35781,"COGS2",28,"CTRL","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35782,"COGS2",64,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35783,"COGS2",46,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35784,"COGS2",59,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35797,"COGS2",54,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35798,"COGS2",45,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35800,"COGS2",48,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35802,"COGS2",65,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35803,"COGS2",45,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35804,"COGS2",27,"SZ","","F","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35805,"COGS2",64,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35806,"COGS2",48,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35807,"COGS2",50,"SZ","","F","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35810,"COGS2",44,"SZ","","M","AS","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35813,"COGS2",44,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35815,"COGS2",55,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35816,"COGS2",61,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35817,"COGS2",27,"SAFD","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+35819,"COGS2",27,"SZ","","F","AA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35821,"COGS2",62,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35823,"COGS2",47,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35824,"COGS2",28,"SZ","","M","MR","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35826,"COGS2",44,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35827,"COGS2",52,"SZ","","F","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35835,"COGS2",24,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35836,"COGS2",39,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35837,"COGS2",55,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35839,"COGS2",53,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35840,"COGS2",32,"SZ","","F","UNK","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35841,"COGS2",56,"SZ","","F","AA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35846,"COGS2",63,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35847,"COGS2",46,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35848,"COGS2",48,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35851,"COGS2",50,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35852,"COGS2",41,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35855,"COGS2",43,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35856,"COGS2",46,"CTRL","","M","CA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35857,"COGS2",35,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35858,"COGS2",19,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35859,"COGS2",43,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35860,"COGS2",40,"SZ","","F","UNK","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35862,"COGS2",55,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35866,"COGS2",22,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35869,"COGS2",51,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35873,"COGS2",44,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35874,"COGS2",32,"SZ","","F","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35877,"COGS2",36,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35878,"COGS2",51,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35879,"COGS2",32,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35881,"COGS2",47,"SZ","","F","AA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35883,"COGS2",52,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35887,"COGS2",40,"CTRL","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35888,"COGS2",25,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35889,"COGS2",55,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35890,"COGS2",52,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35891,"COGS2",40,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35892,"COGS2",24,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35893,"COGS2",22,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35894,"COGS2",45,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35895,"COGS2",28,"CTRL","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35896,"COGS2",43,"SZ","","M","AA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35897,"COGS2",57,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35898,"COGS2",27,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35900,"COGS2",42,"SZ","","M","AA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35901,"COGS2",57,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35902,"COGS2",43,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35904,"COGS2",46,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35906,"COGS2",45,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35907,"COGS2",52,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35908,"COGS2",35,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35909,"COGS2",31,"CTRL","","M","AS","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35910,"COGS2",50,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35912,"COGS2",31,"CTRL","","M","AS","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35914,"COGS2",30,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35915,"COGS2",49,"CTRL","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35916,"COGS2",31,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35917,"COGS2",35,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35918,"COGS2",47,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35920,"COGS2",46,"SZ","","M","UNK","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35926,"COGS2",31,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35927,"COGS2",60,"SAFD","","M","CA","No","Mt. Sinai","New York","NY","New York","SAFD","SZSAFD","SZSAFD",NA
+35928,"COGS2",37,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35931,"COGS2",34,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35932,"COGS2",53,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35933,"COGS2",49,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35935,"COGS2",23,"CTRL","","F","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35937,"COGS2",24,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35938,"COGS2",38,"CTRL","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35939,"COGS2",34,"CTRL","","M","AS","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35942,"COGS2",38,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35947,"COGS2",31,"SZ","","F","NH","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35948,"COGS2",53,"SZ","","M","MR","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35950,"COGS2",50,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35952,"COGS2",65,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35953,"COGS2",47,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35954,"COGS2",48,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35955,"COGS2",34,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35956,"COGS2",45,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35957,"COGS2",38,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35958,"COGS2",65,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35960,"COGS2",46,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35962,"COGS2",29,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+35964,"COGS2",25,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35967,"COGS2",61,"SZ","","F","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35968,"COGS2",43,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35969,"COGS2",35,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35976,"COGS2",30,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35977,"COGS2",50,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35985,"COGS2",44,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+35993,"COGS2",41,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36002,"COGS2",60,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36007,"COGS2",61,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36010,"COGS2",48,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36011,"COGS2",60,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36022,"COGS2",48,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36024,"COGS2",30,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36025,"COGS2",50,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36028,"COGS2",47,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36031,"COGS2",25,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36039,"COGS2",34,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36040,"COGS2",30,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36043,"COGS2",40,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36054,"COGS2",59,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36057,"COGS2",53,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36059,"COGS2",29,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36061,"COGS2",28,"CTRL","","M","AA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36063,"COGS2",54,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36064,"COGS2",35,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36066,"COGS2",31,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36067,"COGS2",54,"SZ","","M","AA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36068,"COGS2",28,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36077,"COGS2",45,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36079,"COGS2",58,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36084,"COGS2",47,"SZ","","M","AA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36095,"COGS2",23,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36096,"COGS2",48,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36097,"COGS2",48,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36098,"COGS2",45,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36103,"COGS2",40,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36105,"COGS2",34,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36107,"COGS2",51,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36111,"COGS2",48,"SZ","","F","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36122,"COGS2",63,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36125,"COGS2",40,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36126,"COGS2",52,"SZ","","F","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36131,"COGS2",51,"SZ","","M","AS","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36134,"COGS2",23,"CTRL","","F","AS","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36143,"COGS2",55,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36145,"COGS2",55,"SZ","","F","AA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36149,"COGS2",51,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36155,"COGS2",65,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36162,"COGS2",28,"SZ","","M","CA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36163,"COGS2",28,"CTRL","","M","AS","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36164,"COGS2",35,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36165,"COGS2",37,"SZ","","M","CA","Yes","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36166,"COGS2",38,"SZ","","M","AA","No","Mt. Sinai","New York","NY","New York","SZ","SZSAFD","SZSAFD",NA
+36167,"COGS2",62,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36168,"COGS2",34,"CTRL","","M","CA","Yes","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36169,"COGS2",44,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36172,"COGS2",61,"CTRL","","M","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36173,"COGS2",53,"CTRL","","F","CA","No","Mt. Sinai","New York","NY","New York","CS","CS","CS",NA
+36198,"COGS2",46,"SZ","","F","AA","No","UPenn","Philadelphia","PA","Philadelphia","SZ","SZSAFD","SZSAFD",NA
+36208,"COGS2",43,"SZ","","M","AA","No","UPenn","Philadelphia","PA","Philadelphia","SZ","SZSAFD","SZSAFD",NA
+36226,"COGS2",38,"SZ","","M","CA","No","UPenn","Philadelphia","PA","Philadelphia","SZ","SZSAFD","SZSAFD",NA
+36245,"COGS2",50,"CTRL","","M","AA","No","UPenn","Philadelphia","PA","Philadelphia","CS","CS","CS",NA
+36504,"COGS2",36,"CTRL","","M","CA","No","UPenn","Philadelphia","PA","Philadelphia","CS","CS","CS",NA
+36636,"COGS2",25,"SZ","","M","CA","Yes","UPenn","Philadelphia","PA","Philadelphia","SZ","SZSAFD","SZSAFD",NA
+36666,"COGS2",50,"SZ","","M","CA","No","University of Washington","Seattle","WA","King","SZ","SZSAFD","SZSAFD",NA
+36758,"COGS2",59,"SZ","","M","CA","No","University of Washington","Seattle","WA","King","SZ","SZSAFD","SZSAFD",NA
+36771,"COGS2",52,"SZ","","F","CA","No","University of Washington","Seattle","WA","King","SZ","SZSAFD","SZSAFD",NA
+36887,"COGS2",29,"SZ","","M","AA","No","University of Washington","Seattle","WA","King","SZ","SZSAFD","SZSAFD",NA
+36961,"COGS2",52,"SAFD","","F","CA","No","University of Washington","Seattle","WA","King","SAFD","SZSAFD","SZSAFD",NA
+37007,"COGS2",44,"SAFD","","F","CA","No","University of Washington","Seattle","WA","King","SAFD","SZSAFD","SZSAFD",NA
+37031,"COGS2",52,"CTRL","","M","CA","No","University of Washington","Seattle","WA","King","CS","CS","CS",NA
+37055,"COGS2",56,"SZ","","M","CA","No","University of Washington","Seattle","WA","King","SZ","SZSAFD","SZSAFD",NA
+37056,"COGS2",21,"CTRL","","M","CA","No","University of Washington","Seattle","WA","King","CS","CS","CS",NA
+37086,"COGS2",60,"CTRL","","M","CA","Yes","University of Washington","Seattle","WA","King","CS","CS","CS",NA
+37101,"COGS2",50,"SAFD","","F","AA","No","University of Washington","Seattle","WA","King","SAFD","SZSAFD","SZSAFD",NA
+37122,"COGS2",52,"CTRL","","M","AA","No","University of Washington","Seattle","WA","King","CS","CS","CS",NA
