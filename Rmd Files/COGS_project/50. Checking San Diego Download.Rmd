@@ -1,0 +1,77 @@
+---
+title: "49. Checking San Diego Download"
+author: "Daniel Zoleikhaeian"
+date: "2023-08-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Checking the data
+```{r}
+df <- read.csv('C:/Users/danie/Documents/Joshi Lab Materials/sd_metarea.csv')
+head(df)
+
+# 41740 is the san diego code
+# notice how the city code is labeled as 0
+## Stands for not identifiable city or group
+
+# contains data from 2010-2014
+levels(factor(df$YEAR))
+
+# contains all the variables needed to calculate the 24-factor diversity index
+colnames(df)
+
+# no missing data
+all(complete.cases(df))
+```
+
+# Making a new data file that also contains the SD data
+```{r}
+df_nosd <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\acs_cogs2_1014.csv')
+
+# put in a MET2013 code of 0 for the non-sd cities
+df_nosd$MET2013 <- rep(0, nrow(df_nosd))
+
+# subset the dataframe
+df_nosd <- df_nosd[,colnames(df)]
+
+# stack the nosd df on top of the sd df
+df_complete <- rbind(df_nosd, df)
+
+# re-encoding the variables
+df_complete$Race2 <- rep(0, nrow(df_complete))
+df_complete$Hispan2 <- rep(0, nrow(df_complete))
+
+sum(df_complete$HISPAN == 9) # everyone reported a hispanic status
+df_complete$Hispan2 <- as.numeric(df_complete$HISPAN != 0) # 0 for not hispanic or latino, else 1
+
+PI_raced <- c(680:699) # PI races
+
+df_complete$Race2[df_complete$RACE == 1 ] <- 1 # White
+df_complete$Race2[df_complete$RACE == 2 ] <- 2 # Black
+df_complete$Race2[df_complete$RACE == 3 ] <- 3 # American Indian or Alaska Native
+df_complete$Race2[df_complete$RACE %in% 4:6 & !(df_complete$RACED %in% PI_raced) ] <- 4 # Asian
+df_complete$Race2[df_complete$RACE == 6 & df_complete$RACED %in% PI_raced ] <- 5 # Pacific Islander (or Native Hawaiian)
+df_complete$Race2[df_complete$RACE %in% 7:9 ] <- 6 # Mixed/Other
+
+# truncating the acs dataset
+df_complete <- df_complete[df_complete$AGE >= 18 & df_complete$AGE <= 65, ]
+
+# for convenience, setting the CITY code for SD to what it says in the variable description
+df_complete$CITY[df_complete$MET2013 == 41740] <- 6270
+levels(factor(df_complete$CITY))
+
+# storing the new dataset
+write.csv(df_complete, 'C:\\Users\\danie\\Documents\\Joshi Lab Materials\\acs_1014_complete.csv', row.names = FALSE)
+
+# checking the new dataset
+df_new <- read.csv('C:\\Users\\danie\\Documents\\Joshi Lab Materials\\acs_1014_complete.csv')
+nrow(df_new) == nrow(df_complete)
+nrow(df_complete) == nrow(df) + nrow(df_nosd)
+
+```
+
+# 
